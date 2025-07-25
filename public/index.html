@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafe Orders - Alex</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #fff;
+            min-height: 100vh;
+        }
+        
+        .header {
+            padding: 60px 24px 20px;
+            text-align: center;
+            background: #fff;
+        }
+        
+        .cafe-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #000;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 16px;
+            color: #8e8e93;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .control-btn {
+            padding: 10px 20px;
+            border: 1px solid #000;
+            border-radius: 20px;
+            background: #fff;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .control-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .control-btn.active {
+            background: #000;
+            color: #fff;
+        }
+        
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 1px solid #30d158;
+            border-radius: 16px;
+            background: #fff;
+            color: #30d158;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .toggle-btn.online {
+            background: #30d158;
+            color: #fff;
+        }
+        
+        .toggle-btn.offline {
+            border-color: #ff3b30;
+            color: #ff3b30;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #30d158;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .orders {
+            padding: 0 24px 32px;
+            display: none;
+        }
+        
+        .orders.active {
+            display: block;
+        }
+        
+        .menu-section {
+            padding: 0 24px 32px;
+            display: none;
+        }
+        
+        .menu-section.active {
+            display: block;
+        }
+        
+        .menu-item {
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .menu-item-info {
+            flex: 1;
+        }
+        
+        .menu-item-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        
+        .menu-item-price {
+            font-size: 14px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+        
+        .menu-item-toggle {
+            width: 44px;
+            height: 24px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            background: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item-toggle.available {
+            background: #30d158;
+            border-color: #30d158;
+        }
+        
+        .menu-item-toggle::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background: #000;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item-toggle.available::after {
+            background: #fff;
+            left: 22px;
+        }
+        
+        .add-item-btn {
+            width: 100%;
+            padding: 16px;
+            border: 2px dashed #8e8e93;
+            border-radius: 12px;
+            background: #fff;
+            color: #8e8e93;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            margin-top: 16px;
+        }
+        
+        .add-item-btn:hover {
+            border-color: #000;
+            color: #000;
+        }
+        
+        .order-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid #000;
+            transition: all 0.3s ease;
+        }
+        
+        .order-card.new {
+            border: 1px solid #000;
+        }
+        
+        .order-card.preparing {
+            border: 1px solid #000;
+        }
+        
+        .order-card.ready {
+            border: 1px solid #000;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .order-id {
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
+            letter-spacing: -0.3px;
+        }
+        
+        .order-time {
+            font-size: 14px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+        
+        .customer-info {
+            font-size: 16px;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .customer-avatar {
+            width: 32px;
+            height: 32px;
+            background: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .order-items {
+            margin-bottom: 20px;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1d1d1f;
+        }
+        
+        .item-price {
+            font-weight: 700;
+            font-size: 18px;
+            color: #000;
+        }
+        
+        .order-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0 0;
+            border-top: 2px solid #f0f0f0;
+            font-weight: 800;
+            font-size: 20px;
+            color: #000;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-accept {
+            background: #007aff;
+            color: #fff;
+        }
+        
+        .btn-accept:hover {
+            background: #005ecb;
+        }
+        
+        .btn-ready {
+            background: #30d158;
+            color: #fff;
+        }
+        
+        .btn-ready:hover {
+            background: #248a3d;
+        }
+        
+        .btn-reject {
+            background: #f2f2f7;
+            color: #ff3b30;
+            border: 1px solid #ff3b30;
+        }
+        
+        .btn-reject:hover {
+            background: #fff2f2;
+        }
+        
+        .btn-complete {
+            background: #8e8e93;
+            color: #fff;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 80px 24px;
+            color: #8e8e93;
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .empty-subtext {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .sound-toggle {
+            position: fixed;
+            top: 48px;
+            right: 24px;
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.3s ease;
+        }
+        
+        .sound-toggle:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+        
+        .logout-btn {
+            position: fixed;
+            top: 48px;
+            left: 24px;
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+        
+        .order-count {
+            color: #000;
+            font-weight: 700;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .header {
+                padding: 50px 20px 24px;
+            }
+            
+            .orders {
+                padding: 0 20px 24px;
+            }
+            
+            .sound-toggle {
+                top: 40px;
+                right: 20px;
+            }
+            
+            .logout-btn {
+                top: 40px;
+                left: 20px;
+            }
+        }
+        
+        /* Smooth animations */
+        .order-card {
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="cafe-name" id="cafeName">Bean & Brew</div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="statusText">Online • <span class="order-count" id="orderCount">3</span> orders</span>
+            </div>
+            
+            <div class="controls">
+                <button class="control-btn active" onclick="showSection('orders')" id="ordersBtn">Orders</button>
+                <button class="control-btn" onclick="showSection('menu')" id="menuBtn">Menu</button>
+                <button class="toggle-btn online" onclick="toggleOnlineStatus()" id="toggleBtn">🟢 Online</button>
+            </div>
+        </div>
+        
+        <div class="logout-btn" onclick="logout()">
+            🚪 Logout
+        </div>
+        
+        <div class="sound-toggle" onclick="toggleSound()">
+            🔊 Sound
+        </div>
+        
+        <div class="orders active" id="orders">
+            <!-- Orders will be populated here -->
+        </div>
+        
+        <div class="menu-section" id="menu">
+            <!-- Menu items will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        let soundEnabled = true;
+        let isOnline = true;
+        let currentSection = 'orders';
+        let currentUser = null;
+        
+        let orders = [
+            {
+                id: 'ALX-001',
+                customer: 'Sarah M.',
+                time: '2m',
+                status: 'new',
+                items: [
+                    { name: 'Cappuccino Large', price: 4.50 },
+                    { name: 'Croissant', price: 3.20 }
+                ],
+                total: 7.70
+            },
+            {
+                id: 'ALX-002',
+                customer: 'Mike R.',
+                time: '5m',
+                status: 'preparing',
+                items: [
+                    { name: 'Americano', price: 3.00 },
+                    { name: 'Blueberry Muffin', price: 2.80 }
+                ],
+                total: 5.80
+            },
+            {
+                id: 'ALX-003',
+                customer: 'Emma K.',
+                time: '8m',
+                status: 'ready',
+                items: [
+                    { name: 'Oat Latte', price: 4.20 },
+                    { name: 'Avocado Toast', price: 6.50 }
+                ],
+                total: 10.70
+            }
+        ];
+
+        let menuItems = [
+            { id: 1, name: 'Espresso', price: 2.50, available: true },
+            { id: 2, name: 'Americano', price: 3.00, available: true },
+            { id: 3, name: 'Cappuccino', price: 4.00, available: true },
+            { id: 4, name: 'Latte', price: 4.20, available: false },
+            { id: 5, name: 'Oat Latte', price: 4.50, available: true },
+            { id: 6, name: 'Cold Brew', price: 3.50, available: true },
+            { id: 7, name: 'Croissant', price: 3.20, available: true },
+            { id: 8, name: 'Bagel', price: 2.80, available: true },
+            { id: 9, name: 'Avocado Toast', price: 6.50, available: false },
+            { id: 10, name: 'Blueberry Muffin', price: 2.80, available: true }
+        ];
+
+        // Authentication functions
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            try {
+                currentUser = JSON.parse(user);
+                document.getElementById('cafeName').textContent = currentUser.name || 'Bean & Brew';
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                logout();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        function showSection(section) {
+            currentSection = section;
+            
+            // Update buttons
+            document.getElementById('ordersBtn').classList.toggle('active', section === 'orders');
+            document.getElementById('menuBtn').classList.toggle('active', section === 'menu');
+            
+            // Update sections
+            document.getElementById('orders').classList.toggle('active', section === 'orders');
+            document.getElementById('menu').classList.toggle('active', section === 'menu');
+            
+            if (section === 'orders') {
+                renderOrders();
+            } else if (section === 'menu') {
+                renderMenu();
+            }
+        }
+
+        function toggleOnlineStatus() {
+            isOnline = !isOnline;
+            const toggleBtn = document.getElementById('toggleBtn');
+            const statusText = document.getElementById('statusText');
+            const statusDot = document.querySelector('.status-dot');
+            
+            if (isOnline) {
+                toggleBtn.textContent = '🟢 Online';
+                toggleBtn.className = 'toggle-btn online';
+                statusText.innerHTML = `Online • <span class="order-count" id="orderCount">${orders.filter(o => o.status !== 'completed').length}</span> orders`;
+                statusDot.style.background = '#30d158';
+            } else {
+                toggleBtn.textContent = '🔴 Offline';
+                toggleBtn.className = 'toggle-btn offline';
+                statusText.textContent = 'Offline - Not accepting orders';
+                statusDot.style.background = '#ff3b30';
+            }
+        }
+
+        function renderMenu() {
+            const menuContainer = document.getElementById('menu');
+            
+            menuContainer.innerHTML = `
+                ${menuItems.map(item => `
+                    <div class="menu-item">
+                        <div class="menu-item-info">
+                            <div class="menu-item-name">${item.name}</div>
+                            <div class="menu-item-price">${item.price.toFixed(2)}</div>
+                        </div>
+                        <div class="menu-item-toggle ${item.available ? 'available' : ''}" onclick="toggleMenuItem(${item.id})"></div>
+                    </div>
+                `).join('')}
+                <button class="add-item-btn" onclick="addMenuItem()">+ Add New Item</button>
+            `;
+        }
+
+        function toggleMenuItem(id) {
+            const item = menuItems.find(item => item.id === id);
+            if (item) {
+                item.available = !item.available;
+                renderMenu();
+                console.log(`${item.name} is now ${item.available ? 'available' : 'unavailable'}`);
+            }
+        }
+
+        function addMenuItem() {
+            const name = prompt('Item name:');
+            const price = parseFloat(prompt('Price:'));
+            
+            if (name && !isNaN(price)) {
+                const newItem = {
+                    id: Math.max(...menuItems.map(item => item.id)) + 1,
+                    name: name,
+                    price: price,
+                    available: true
+                };
+                menuItems.push(newItem);
+                renderMenu();
+                console.log('Added new menu item:', newItem);
+            }
+        }
+
+        function renderOrders() {
+            const ordersContainer = document.getElementById('orders');
+            const orderCount = document.getElementById('orderCount');
+            
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">☕</div>
+                        <div class="empty-text">All caught up</div>
+                        <div class="empty-subtext">New orders will appear here</div>
+                    </div>
+                `;
+                orderCount.textContent = '0';
+                return;
+            }
+
+            const pendingCount = orders.filter(o => o.status !== 'completed').length;
+            orderCount.textContent = pendingCount;
+
+            ordersContainer.innerHTML = orders.map(order => `
+                <div class="order-card ${order.status}">
+                    <div class="order-header">
+                        <div class="order-id">${order.id}</div>
+                        <div class="order-time">${order.time}</div>
+                    </div>
+                    <div class="customer-info">
+                        <div class="customer-avatar">${order.customer.charAt(0)}</div>
+                        ${order.customer}
+                    </div>
+                    <div class="order-items">
+                        ${order.items.map(item => `
+                            <div class="item">
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-price">$${item.price.toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="order-total">
+                        <span>Total</span>
+                        <span>$${order.total.toFixed(2)}</span>
+                    </div>
+                    ${getActionButtons(order)}
+                </div>
+            `).join('');
+        }
+
+        function getActionButtons(order) {
+            switch(order.status) {
+                case 'new':
+                    return `
+                        <div class="actions">
+                            <button class="btn btn-accept" onclick="acceptOrder('${order.id}')">Accept • 5 min</button>
+                            <button class="btn btn-reject" onclick="rejectOrder('${order.id}')">Decline</button>
+                        </div>
+                    `;
+                case 'preparing':
+                    return `
+                        <div class="actions">
+                            <button class="btn btn-ready" onclick="markReady('${order.id}')">Ready for Pickup</button>
+                        </div>
+                    `;
+                case 'ready':
+                    return `
+                        <div class="actions">
+                            <button class="btn btn-complete" onclick="completeOrder('${order.id}')">Picked Up</button>
+                        </div>
+                    `;
+                default:
+                    return '';
+            }
+        }
+
+        function acceptOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = 'preparing';
+                playSound();
+                renderOrders();
+                console.log('Order accepted:', orderId);
+            }
+        }
+
+        function rejectOrder(orderId) {
+            orders = orders.filter(o => o.id !== orderId);
+            renderOrders();
+            console.log('Order rejected:', orderId);
+        }
+
+        function markReady(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = 'ready';
+                playSound();
+                renderOrders();
+                console.log('Order ready:', orderId);
+            }
+        }
+
+        function completeOrder(orderId) {
+            orders = orders.filter(o => o.id !== orderId);
+            renderOrders();
+            console.log('Order completed:', orderId);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const toggle = document.querySelector('.sound-toggle');
+            toggle.textContent = soundEnabled ? '🔊 Sound' : '🔇 Muted';
+        }
+
+        function playSound() {
+            if (soundEnabled) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            }
+        }
+
+        function simulateNewOrder() {
+            if (!isOnline) return; // Don't add orders when offline
+            
+            const customers = ['Alex D.', 'Jordan W.', 'Taylor B.', 'Morgan C.', 'Casey R.'];
+            const availableItems = menuItems.filter(item => item.available);
+            
+            if (availableItems.length === 0) return; // No available items
+            
+            const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
+            const numItems = Math.floor(Math.random() * 2) + 1;
+            const randomItems = [];
+            
+            for (let i = 0; i < numItems; i++) {
+                const item = availableItems[Math.floor(Math.random() * availableItems.length)];
+                randomItems.push({ name: item.name, price: item.price });
+            }
+            
+            const total = randomItems.reduce((sum, item) => sum + item.price, 0);
+            
+            const newOrder = {
+                id: `ALX-${String(Date.now()).slice(-3)}`,
+                customer: randomCustomer,
+                time: 'now',
+                status: 'new',
+                items: randomItems,
+                total: total
+            };
+            
+            orders.unshift(newOrder);
+            playSound();
+            if (currentSection === 'orders') {
+                renderOrders();
+            }
+            
+            // Update status if on orders section
+            if (currentSection === 'orders') {
+                const statusText = document.getElementById('statusText');
+                statusText.innerHTML = `Online • <span class="order-count" id="orderCount">${orders.filter(o => o.status !== 'completed').length}</span> orders`;
+            }
+        }
+
+        // Initialize
+        checkAuth();
+        renderOrders();
+
+        // Simulate new orders for demo (only when online)
+        setInterval(() => {
+            if (Math.random() < 0.2 && isOnline) {
+                simulateNewOrder();
+            }
+        }, 60000);
+    </script>
+</body>
+</html>
