@@ -732,13 +732,17 @@ router.post("/api/menu/quick-add", authMiddleware, async (ctx) => {
     for (const item of items) {
       const { name, description, category, subcategory, price, cost_price, preparation_time, image_url } = item;
       
-      const result = await db.query(
+      await db.query(
         "INSERT INTO menu_items (user_id, name, description, category, subcategory, price, cost_price, preparation_time, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [userId, name, description, category, subcategory, price, cost_price, preparation_time, image_url]
       );
       
+      // Get the last inserted ID
+      const lastIdResult = await db.query("SELECT last_insert_rowid() as id");
+      const itemId = lastIdResult[0][0];
+      
       addedItems.push({
-        id: result[0].id,
+        id: itemId,
         name,
         category,
         price
@@ -829,6 +833,443 @@ router.post("/api/onboarding/progress", authMiddleware, async (ctx) => {
     ctx.response.body = { message: "Progress saved successfully" };
   } catch (error) {
     console.error("Save onboarding progress error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// ===== AI AGENT APIs =====
+
+// Agent authentication middleware
+async function agentAuthMiddleware(ctx: any, next: any) {
+  const authHeader = ctx.request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Agent ')) {
+    ctx.response.status = 401;
+    ctx.response.body = { message: "Agent authentication required" };
+    return;
+  }
+  
+  const agentId = authHeader.replace('Agent ', '');
+  // For now, accept any agent ID. In production, validate against registered agents
+  ctx.state.agentId = agentId;
+  await next();
+}
+
+// Business discovery feed for AI agents
+router.get("/api/v1/feed", agentAuthMiddleware, async (ctx) => {
+  try {
+    const { limit = 20, offset = 0, business_type, location } = ctx.request.url.searchParams;
+    
+    let query = `
+      SELECT 
+        bp.id,
+        bp.business_name,
+        bp.business_type,
+        bp.description,
+        bp.is_online,
+        bp.created_at,
+        u.name as owner_name,
+        COUNT(mi.id) as menu_item_count
+      FROM business_profiles bp
+      JOIN users u ON bp.user_id = u.id
+      LEFT JOIN menu_items mi ON bp.user_id = mi.user_id AND mi.available = 1
+      WHERE bp.is_active = 1 AND bp.is_online = 1
+    `;
+    
+    const params: any[] = [];
+    
+    if (business_type) {
+      query += " AND bp.business_type = ?";
+      params.push(business_type);
+    }
+    
+    query += " GROUP BY bp.id ORDER BY bp.created_at DESC LIMIT ? OFFSET ?";
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const businesses = await db.query(query, params);
+    
+    // Format response
+    const formattedBusinesses = businesses.map((business: any) => ({
+      business_id: business[0],
+      business_name: business[1],
+      business_type: business[2],
+      description: business[3],
+      is_online: business[4] === 1,
+      created_at: business[5],
+      owner_name: business[6],
+      menu_item_count: business[7],
+      api_endpoint: `/api/v1/business/${business[0]}/menu`
+    }));
+    
+    ctx.response.body = {
+      businesses: formattedBusinesses,
+      pagination: {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        total: formattedBusinesses.length
+      }
+    };
+  } catch (error) {
+    console.error("Get business feed error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Get business menu for AI agents
+router.get("/api/v1/business/:businessId/menu", agentAuthMiddleware, async (ctx) => {
+  try {
+    const businessId = ctx.params.businessId;
+    
+    // Get business profile
+    const business = await db.query(
+      "SELECT bp.*, u.name as owner_name FROM business_profiles bp JOIN users u ON bp.user_id = u.id WHERE bp.id = ? AND bp.is_active = 1",
+      [businessId]
+    );
+    
+    if (business.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Business not found" };
+      return;
+    }
+    
+    const businessProfile = business[0];
+    
+    // Get available menu items
+    const menuItems = await db.query(
+      "SELECT id, name, description, category, subcategory, price, preparation_time, image_url FROM menu_items WHERE user_id = ? AND available = 1 ORDER BY category, name",
+      [businessProfile[1]] // user_id
+    );
+    
+    // Format menu items
+    const formattedMenu = menuItems.map((item: any) => ({
+      item_id: item[0],
+      name: item[1],
+      description: item[2],
+      category: item[3],
+      subcategory: item[4],
+      price: item[5],
+      preparation_time: item[6],
+      image_url: item[7]
+    }));
+    
+    ctx.response.body = {
+      business: {
+        business_id: businessProfile[0],
+        business_name: businessProfile[2],
+        business_type: businessProfile[3],
+        description: businessProfile[4],
+        is_online: businessProfile[7] === 1,
+        owner_name: businessProfile[8]
+      },
+      menu: formattedMenu,
+      order_endpoint: `/api/v1/business/${businessId}/order`
+    };
+  } catch (error) {
+    console.error("Get business menu error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Place order (AI agent)
+router.post("/api/v1/business/:businessId/order", agentAuthMiddleware, async (ctx) => {
+  try {
+    const businessId = ctx.params.businessId;
+    const agentId = ctx.state.agentId;
+    const body = await ctx.request.body().value;
+    const { customer_name, customer_phone, items, special_instructions, pickup_time } = body;
+    
+    // Validate required fields
+    if (!customer_name || !items || !Array.isArray(items) || items.length === 0) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "customer_name and items array are required" };
+      return;
+    }
+    
+    // Get business profile
+    const business = await db.query(
+      "SELECT user_id, business_name FROM business_profiles WHERE id = ? AND is_active = 1 AND is_online = 1",
+      [businessId]
+    );
+    
+    if (business.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Business not found or offline" };
+      return;
+    }
+    
+    const userId = business[0][0];
+    const businessName = business[0][1];
+    
+    // Validate and calculate order
+    let total = 0;
+    const validatedItems: any[] = [];
+    
+    for (const item of items) {
+      const menuItem = await db.query(
+        "SELECT id, name, price, available FROM menu_items WHERE id = ? AND user_id = ? AND available = 1",
+        [item.item_id, userId]
+      );
+      
+      if (menuItem.length === 0) {
+        ctx.response.status = 400;
+        ctx.response.body = { message: `Item ${item.item_id} not found or unavailable` };
+        return;
+      }
+      
+      const quantity = item.quantity || 1;
+      const itemTotal = menuItem[0][2] * quantity; // price * quantity
+      total += itemTotal;
+      
+      validatedItems.push({
+        item_id: menuItem[0][0],
+        name: menuItem[0][1],
+        price: menuItem[0][2],
+        quantity: quantity,
+        subtotal: itemTotal
+      });
+    }
+    
+    // Generate order ID
+    const orderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Calculate cancellation deadline (60 seconds from now)
+    const cancellationDeadline = new Date(Date.now() + 60000);
+    
+    // Create order
+    await db.query(
+      `INSERT INTO orders (
+        user_id, order_id, customer, customer_phone, status, items, total, 
+        agent_id, special_instructions, pickup_time, cancellation_deadline, order_source
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId, orderId, customer_name, customer_phone || null, 'new',
+        JSON.stringify(validatedItems), total, agentId, special_instructions || null,
+        pickup_time || null, cancellationDeadline.toISOString(), 'ai_agent'
+      ]
+    );
+    
+    ctx.response.status = 201;
+    ctx.response.body = {
+      order_id: orderId,
+      business_name: businessName,
+      customer_name: customer_name,
+      items: validatedItems,
+      total: total,
+      status: 'new',
+      cancellation_deadline: cancellationDeadline.toISOString(),
+      status_endpoint: `/api/v1/order/${orderId}/status`,
+      cancel_endpoint: `/api/v1/order/${orderId}/cancel`
+    };
+  } catch (error) {
+    console.error("Place order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Get order status (AI agent)
+router.get("/api/v1/order/:orderId/status", agentAuthMiddleware, async (ctx) => {
+  try {
+    const orderId = ctx.params.orderId;
+    const agentId = ctx.state.agentId;
+    
+    const order = await db.query(
+      "SELECT o.*, bp.business_name FROM orders o JOIN business_profiles bp ON o.user_id = bp.user_id WHERE o.order_id = ? AND o.agent_id = ?",
+      [orderId, agentId]
+    );
+    
+    if (order.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Order not found" };
+      return;
+    }
+    
+    const orderData = order[0];
+    const items = JSON.parse(orderData[6]); // items column
+    
+    ctx.response.body = {
+      order_id: orderData[2], // order_id
+      business_name: orderData[16], // business_name (from JOIN)
+      customer_name: orderData[3], // customer
+      customer_phone: orderData[4], // customer_phone
+      status: orderData[5], // status
+      items: items,
+      total: orderData[7], // total
+      special_instructions: orderData[13], // special_instructions
+      pickup_time: orderData[10], // pickup_time
+      estimated_ready_time: orderData[11], // estimated_ready_time
+      cancellation_deadline: orderData[12], // cancellation_deadline
+      created_at: orderData[15], // created_at
+      can_cancel: new Date() < new Date(orderData[12]) // cancellation_deadline
+    };
+  } catch (error) {
+    console.error("Get order status error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Cancel order (AI agent) - within 60 seconds
+router.post("/api/v1/order/:orderId/cancel", agentAuthMiddleware, async (ctx) => {
+  try {
+    const orderId = ctx.params.orderId;
+    const agentId = ctx.state.agentId;
+    const body = await ctx.request.body().value;
+    const { reason } = body;
+    
+    const order = await db.query(
+      "SELECT o.*, bp.business_name FROM orders o JOIN business_profiles bp ON o.user_id = bp.user_id WHERE o.order_id = ? AND o.agent_id = ?",
+      [orderId, agentId]
+    );
+    
+    if (order.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Order not found" };
+      return;
+    }
+    
+    const orderData = order[0];
+    const cancellationDeadline = new Date(orderData[12]); // cancellation_deadline
+    
+    // Check if order can still be cancelled (within 60 seconds)
+    if (new Date() > cancellationDeadline) {
+      ctx.response.status = 400;
+      ctx.response.body = { 
+        message: "Order cannot be cancelled after 60 seconds",
+        cancellation_deadline: cancellationDeadline.toISOString()
+      };
+      return;
+    }
+    
+    // Check if order is still in 'new' status
+    if (orderData[5] !== 'new') { // status
+      ctx.response.status = 400;
+      ctx.response.body = { 
+        message: "Order cannot be cancelled - already being prepared",
+        current_status: orderData[5]
+      };
+      return;
+    }
+    
+    // Cancel the order
+    await db.query(
+      "UPDATE orders SET status = 'cancelled' WHERE order_id = ? AND agent_id = ?",
+      [orderId, agentId]
+    );
+    
+    ctx.response.body = {
+      order_id: orderId,
+      status: 'cancelled',
+      message: "Order cancelled successfully",
+      reason: reason || null
+    };
+  } catch (error) {
+    console.error("Cancel order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Submit feedback (AI agent)
+router.post("/api/v1/order/:orderId/feedback", agentAuthMiddleware, async (ctx) => {
+  try {
+    const orderId = ctx.params.orderId;
+    const agentId = ctx.state.agentId;
+    const body = await ctx.request.body().value;
+    const { rating, comment, category } = body;
+    
+    // Validate feedback
+    if (!rating || rating < 1 || rating > 5) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Rating must be between 1 and 5" };
+      return;
+    }
+    
+    // Check if order exists and belongs to this agent
+    const order = await db.query(
+      "SELECT id FROM orders WHERE order_id = ? AND agent_id = ?",
+      [orderId, agentId]
+    );
+    
+    if (order.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Order not found" };
+      return;
+    }
+    
+    // Create feedback table if it doesn't exist
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS order_feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        comment TEXT,
+        category TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (order_id) REFERENCES orders (order_id)
+      )
+    `);
+    
+    // Insert feedback
+    await db.query(
+      "INSERT INTO order_feedback (order_id, agent_id, rating, comment, category) VALUES (?, ?, ?, ?, ?)",
+      [orderId, agentId, rating, comment || null, category || null]
+    );
+    
+    ctx.response.body = {
+      order_id: orderId,
+      feedback_id: orderId, // For simplicity, using order_id as feedback_id
+      rating: rating,
+      comment: comment,
+      category: category,
+      message: "Feedback submitted successfully"
+    };
+  } catch (error) {
+    console.error("Submit feedback error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Get business status (AI agent)
+router.get("/api/v1/business/:businessId/status", agentAuthMiddleware, async (ctx) => {
+  try {
+    const businessId = ctx.params.businessId;
+    
+    const business = await db.query(
+      "SELECT bp.*, u.name as owner_name FROM business_profiles bp JOIN users u ON bp.user_id = u.id WHERE bp.id = ? AND bp.is_active = 1",
+      [businessId]
+    );
+    
+    if (business.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Business not found" };
+      return;
+    }
+    
+    const businessData = business[0];
+    
+    // Get current order count
+    const orderCount = await db.query(
+      "SELECT COUNT(*) FROM orders WHERE user_id = ? AND status IN ('new', 'preparing')",
+      [businessData[1]] // user_id
+    );
+    
+    ctx.response.body = {
+      business_id: businessData[0],
+      business_name: businessData[2],
+      business_type: businessData[3],
+      is_online: businessData[7] === 1,
+      is_active: businessData[6] === 1,
+      current_order_count: orderCount[0][0],
+      owner_name: businessData[8],
+      last_updated: businessData[10] // updated_at
+    };
+  } catch (error) {
+    console.error("Get business status error:", error);
     ctx.response.status = 500;
     ctx.response.body = { message: "Internal server error" };
   }
