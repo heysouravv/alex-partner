@@ -521,6 +521,7 @@
         let isOnline = true;
         let currentSection = 'orders';
         let currentUser = null;
+        let isCheckingOnboarding = false;
         
         let orders = [
             {
@@ -584,17 +585,99 @@
             try {
                 currentUser = JSON.parse(user);
                 document.getElementById('cafeName').textContent = currentUser.name || 'Bean & Brew';
+                
+                // Load business online status from database
+                loadBusinessStatus(token);
+                
+                // Check if user needs onboarding using API only
+                checkOnboardingStatus(token);
             } catch (error) {
                 console.error('Error parsing user data:', error);
                 logout();
             }
         }
+        
+        // Load business online status from database
+        async function loadBusinessStatus(token) {
+            try {
+                const response = await fetch('/api/business/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    isOnline = data.is_online;
+                    updateOnlineStatusUI();
+                    console.log('Business status loaded:', isOnline ? 'Online' : 'Offline');
+                } else {
+                    console.log('Could not load business status, using default');
+                }
+            } catch (error) {
+                console.error('Error loading business status:', error);
+            }
+        }
+        
+        // Check onboarding status and redirect if needed
+        async function checkOnboardingStatus(token) {
+            if (isCheckingOnboarding) {
+                console.log('Dashboard: Already checking onboarding, skipping...');
+                return;
+            }
+            
+            // First check if we already know onboarding is completed
+            const onboardingCompleted = localStorage.getItem('onboarding_completed');
+            if (onboardingCompleted === 'true') {
+                console.log('Dashboard: Onboarding already completed (cached), staying on dashboard');
+                return;
+            }
+            
+            isCheckingOnboarding = true;
+            console.log('Dashboard: Onboarding status unknown, checking via API...');
+            
+            try {
+                const response = await fetch('/api/onboarding/progress', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('Dashboard: Onboarding progress response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Dashboard: Onboarding progress data:', data);
+                    
+                    if (!data.completed) {
+                        console.log('Dashboard: Onboarding not completed, redirecting to onboarding');
+                        // User hasn't completed onboarding, redirect to onboarding
+                        isCheckingOnboarding = false;
+                        window.location.href = 'onboarding.html';
+                        return;
+                    } else {
+                        console.log('Dashboard: Onboarding completed, caching status and staying on dashboard');
+                        // Cache the completion status to avoid future API calls
+                        localStorage.setItem('onboarding_completed', 'true');
+                    }
+                } else {
+                    console.log('Dashboard: Could not check onboarding status, staying on dashboard');
+                }
+            } catch (error) {
+                console.error('Dashboard: Error checking onboarding status:', error);
+            }
+            
+            isCheckingOnboarding = false;
+        }
 
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            localStorage.removeItem('onboarding_completed');
             window.location.href = 'login.html';
         }
+        
+
 
         function showSection(section) {
             currentSection = section;
@@ -614,8 +697,38 @@
             }
         }
 
-        function toggleOnlineStatus() {
-            isOnline = !isOnline;
+        async function toggleOnlineStatus() {
+            const newStatus = !isOnline;
+            
+            // Save status to database
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const response = await fetch('/api/business/status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            is_online: newStatus
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        isOnline = newStatus;
+                        updateOnlineStatusUI();
+                        console.log('Business status updated:', isOnline ? 'Online' : 'Offline');
+                    } else {
+                        console.error('Failed to update business status');
+                    }
+                } catch (error) {
+                    console.error('Error updating business status:', error);
+                }
+            }
+        }
+        
+        function updateOnlineStatusUI() {
             const toggleBtn = document.getElementById('toggleBtn');
             const statusText = document.getElementById('statusText');
             const statusDot = document.querySelector('.status-dot');

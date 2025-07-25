@@ -380,18 +380,35 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ name, email, password }),
+                    body: JSON.stringify({ name, email, password, business_name: name }),
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok) {
-                    showSuccess('Account created successfully! Redirecting to login...');
+                    console.log('Signup response:', data);
+                    showSuccess('Account created successfully! Redirecting...');
                     
-                    // Redirect to login after a short delay
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 2000);
+                    // Save login token and user data if provided
+                    if (data.token) {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                    }
+                    
+                    // Check onboarding status and redirect accordingly
+                    if (data.onboarding_step && data.onboarding_step > 1) {
+                        console.log('Redirecting to onboarding, step:', data.onboarding_step);
+                        // User has business name, go to onboarding
+                        setTimeout(() => {
+                            window.location.href = 'onboarding.html';
+                        }, 1000);
+                    } else {
+                        console.log('Redirecting to login, step:', data.onboarding_step);
+                        // User needs to complete signup flow, go to login
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 1000);
+                    }
                 } else {
                     showError(data.message || 'Signup failed. Please try again.');
                 }

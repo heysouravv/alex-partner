@@ -272,14 +272,28 @@
                 const data = await response.json();
                 
                 if (response.ok) {
+                    console.log('Login response:', data);
                     showSuccess('Login successful! Redirecting...');
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    // Redirect to main app after a short delay
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
+                    // Clear cached onboarding status for fresh check
+                    localStorage.removeItem('onboarding_completed');
+                    
+                    // Check onboarding status from login response
+                    if (data.onboarding_completed === true) {
+                        console.log('Login: Onboarding completed, going to dashboard');
+                        // User has completed onboarding, go to main dashboard
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    } else {
+                        console.log('Login: Onboarding not completed, going to onboarding');
+                        // User needs to complete onboarding
+                        setTimeout(() => {
+                            window.location.href = 'onboarding.html';
+                        }, 1000);
+                    }
                 } else {
                     showError(data.message || 'Login failed. Please try again.');
                 }
@@ -291,11 +305,50 @@
             }
         });
 
+        // Check onboarding status and redirect accordingly
+        async function checkOnboardingStatus(token) {
+            try {
+                const response = await fetch('/api/onboarding/progress', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.completed) {
+                        // User has completed onboarding, go to main dashboard
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    } else {
+                        // User needs to complete onboarding
+                        setTimeout(() => {
+                            window.location.href = 'onboarding.html';
+                        }, 1000);
+                    }
+                } else {
+                    // If we can't check onboarding status, assume they need onboarding
+                    setTimeout(() => {
+                        window.location.href = 'onboarding.html';
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Error checking onboarding status:', error);
+                // If there's an error, assume they need onboarding
+                setTimeout(() => {
+                    window.location.href = 'onboarding.html';
+                }, 1000);
+            }
+        }
+
         // Check if user is already logged in
         window.addEventListener('load', () => {
             const token = localStorage.getItem('token');
             if (token) {
-                window.location.href = 'index.html';
+                // Don't automatically redirect to prevent loops
+                console.log('User already logged in, staying on login page');
             }
         });
     </script>

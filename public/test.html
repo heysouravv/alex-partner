@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Test - Onboarding Flow</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: #fff;
+            color: #000;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .step {
+            background: #f8f8f8;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #333;
+        }
+        .status {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #30d158;
+        }
+        .error {
+            background: #fff2f2;
+            border-left-color: #ff3b30;
+        }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Simple Onboarding Test</h1>
+    
+    <div class="step">
+        <h2>Step 1: Create Account</h2>
+        <button onclick="createAccount()">Create Test Account</button>
+        <div id="createResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>Step 2: Login</h2>
+        <button onclick="loginAccount()">Login with Test Account</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>Step 3: Check Onboarding Status</h2>
+        <button onclick="checkOnboarding()">Check Onboarding Progress</button>
+        <div id="onboardingResult"></div>
+    </div>
+    
+    <div class="step">
+        <h2>Step 4: Manual Navigation</h2>
+        <button onclick="goTo('signup.html')">Go to Signup</button>
+        <button onclick="goTo('login.html')">Go to Login</button>
+        <button onclick="goTo('onboarding.html')">Go to Onboarding</button>
+        <button onclick="goTo('index.html')">Go to Dashboard</button>
+    </div>
+    
+    <div class="step">
+        <h2>Current State</h2>
+        <div id="currentState"></div>
+        <button onclick="updateState()">Refresh State</button>
+        <button onclick="clearAll()">Clear All Data</button>
+    </div>
+
+    <script>
+        let testEmail = 'simpletest' + Date.now() + '@example.com';
+        
+        async function createAccount() {
+            const container = document.getElementById('createResult');
+            container.innerHTML = '<div class="status">Creating account...</div>';
+            
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Simple Test',
+                        email: testEmail,
+                        password: 'TestPass123',
+                        business_name: 'Simple Test'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Save the token for login test
+                    localStorage.setItem('test_token', data.token);
+                    localStorage.setItem('test_user', JSON.stringify(data.user));
+                    
+                    container.innerHTML = `
+                        <div class="status">✅ Account created successfully!</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="status error">❌ Failed to create account</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+            
+            updateState();
+        }
+        
+        async function loginAccount() {
+            const container = document.getElementById('loginResult');
+            container.innerHTML = '<div class="status">Logging in...</div>';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: testEmail,
+                        password: 'TestPass123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Save the login data
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    container.innerHTML = `
+                        <div class="status">✅ Login successful!</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="status error">❌ Login failed</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+            
+            updateState();
+        }
+        
+        async function checkOnboarding() {
+            const container = document.getElementById('onboardingResult');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                container.innerHTML = '<div class="status error">❌ No token found. Please login first.</div>';
+                return;
+            }
+            
+            container.innerHTML = '<div class="status">Checking onboarding...</div>';
+            
+            try {
+                const response = await fetch('/api/onboarding/progress', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    container.innerHTML = `
+                        <div class="status">✅ Onboarding status retrieved!</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="status error">❌ Failed to get onboarding status</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function goTo(page) {
+            window.location.href = page;
+        }
+        
+        function updateState() {
+            const container = document.getElementById('currentState');
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            const onboardingCompleted = localStorage.getItem('onboarding_completed');
+            
+            container.innerHTML = `
+                <div><strong>Token:</strong> ${token ? '✅ Present' : '❌ Missing'}</div>
+                <div><strong>User:</strong> ${user ? '✅ Present' : '❌ Missing'}</div>
+                <div><strong>Onboarding Completed:</strong> ${onboardingCompleted || '❌ Not set'}</div>
+                <div><strong>Test Email:</strong> ${testEmail}</div>
+                <div><strong>Current URL:</strong> ${window.location.href}</div>
+            `;
+        }
+        
+        function clearAll() {
+            localStorage.clear();
+            updateState();
+            document.getElementById('createResult').innerHTML = '';
+            document.getElementById('loginResult').innerHTML = '';
+            document.getElementById('onboardingResult').innerHTML = '';
+        }
+        
+        // Update state on load
+        updateState();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Your Business - Onboarding</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .cafe-name {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #000;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #f0f0f0;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #000;
+            transition: width 0.3s ease;
+            width: 20%;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 32px;
+            gap: 8px;
+        }
+        
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: #000;
+            transform: scale(1.2);
+        }
+        
+        .step-dot.completed {
+            background: #30d158;
+        }
+        
+        .form {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 24px;
+            border: 1px solid #000;
+        }
+        
+        .step {
+            display: none;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        .step-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #000;
+            text-align: center;
+        }
+        
+        .step-subtitle {
+            font-size: 16px;
+            color: #8e8e93;
+            font-weight: 500;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #fff;
+            color: #000;
+            transition: all 0.2s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+        
+        .form-input.error {
+            border-color: #ff3b30;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+            margin-bottom: 16px;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-primary {
+            background: #000;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #333;
+        }
+        
+        .btn-secondary {
+            background: #f2f2f7;
+            color: #000;
+            border: 1px solid #000;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .navigation {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .navigation .btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        .business-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .business-type-card {
+            padding: 20px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        
+        .business-type-card:hover {
+            background: #f0f0f0;
+        }
+        
+        .business-type-card.selected {
+            background: #000;
+            color: #fff;
+        }
+        
+        .business-type-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .business-type-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .business-type-desc {
+            font-size: 14px;
+            color: #8e8e93;
+        }
+        
+        .business-type-card.selected .business-type-desc {
+            color: #ccc;
+        }
+        
+        .template-grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .template-card {
+            padding: 20px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        
+        .template-card:hover {
+            background: #f0f0f0;
+        }
+        
+        .template-card.selected {
+            background: #000;
+            color: #fff;
+        }
+        
+        .template-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .template-desc {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-bottom: 12px;
+        }
+        
+        .template-items {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .template-card.selected .template-desc,
+        .template-card.selected .template-items {
+            color: #ccc;
+        }
+        
+        .success-animation {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .error-message {
+            background: #fff2f2;
+            border: 1px solid #ff3b30;
+            color: #ff3b30;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #f0fff0;
+            border: 1px solid #30d158;
+            color: #248a3d;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .form {
+                padding: 24px 20px;
+            }
+            
+            .business-type-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="cafe-name">Welcome to Your Business</div>
+            <div class="subtitle">Let's get you set up in just a few steps</div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="step-indicator">
+            <div class="step-dot active" data-step="1"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-dot" data-step="3"></div>
+            <div class="step-dot" data-step="4"></div>
+            <div class="step-dot" data-step="5"></div>
+        </div>
+        
+        <!-- Step 1: Welcome -->
+        <div class="step active" id="step1">
+            <div class="form">
+                <h1 class="step-title">🚀 Welcome to Your Business!</h1>
+                <p class="step-subtitle">Great! Your account is created. Now let's set up your business profile in just a few steps.</p>
+                
+                <div style="text-align: center; margin: 40px 0;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">✅</div>
+                    <h3 style="margin-bottom: 16px;">Account Created Successfully!</h3>
+                    <p style="color: #8e8e93; line-height: 1.6;">
+                        You're all set to start building your business profile. 
+                        Let's make your business shine online!
+                    </p>
+                </div>
+                
+                                    <button class="btn btn-primary" onclick="nextStep().catch(console.error)">Let's Get Started</button>
+                <button class="btn btn-secondary" onclick="checkOnboardingProgress()" style="margin-top: 10px;">Check Progress</button>
+                
+                <div class="error-message" id="error1"></div>
+                <div class="success-message" id="success1"></div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Business Setup -->
+        <div class="step" id="step2">
+            <div class="form">
+                <h1 class="step-title">🏪 Tell us about your business</h1>
+                <p class="step-subtitle">Help us customize your experience by telling us about your business type.</p>
+                
+                <div class="form-group">
+                    <label class="form-label">What type of business do you run?</label>
+                    <div class="business-type-grid" id="businessTypes">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Business Description (Optional)</label>
+                    <textarea class="form-input" id="businessDescription" placeholder="Tell customers about your business..." rows="3"></textarea>
+                </div>
+                
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="previousStep()">Back</button>
+                    <button class="btn btn-primary" onclick="nextStep().catch(console.error)">Continue</button>
+                </div>
+                
+                <div class="error-message" id="error2"></div>
+                <div class="success-message" id="success2"></div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Quick Menu Builder -->
+        <div class="step" id="step3">
+            <div class="form">
+                <h1 class="step-title">🍕 Let's build your menu!</h1>
+                <p class="step-subtitle">Choose a template or start from scratch. You can always customize later.</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Choose a menu template</label>
+                    <div class="template-grid" id="menuTemplates">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="previousStep()">Back</button>
+                    <button class="btn btn-primary" onclick="nextStep().catch(console.error)">Continue</button>
+                </div>
+                
+                <div class="error-message" id="error3"></div>
+                <div class="success-message" id="success3"></div>
+            </div>
+        </div>
+        
+        <!-- Step 4: Pricing & Availability -->
+        <div class="step" id="step4">
+            <div class="form">
+                <h1 class="step-title">💰 Set your prices</h1>
+                <p class="step-subtitle">Review and adjust your prices. We'll help you calculate profit margins.</p>
+                
+                <div id="pricingContent">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="previousStep()">Back</button>
+                    <button class="btn btn-primary" onclick="nextStep().catch(console.error)">Continue</button>
+                </div>
+                
+                <div class="error-message" id="error4"></div>
+                <div class="success-message" id="success4"></div>
+            </div>
+        </div>
+        
+        <!-- Step 5: Go Live & Test -->
+        <div class="step" id="step5">
+            <div class="form">
+                <div class="success-animation">
+                    <div class="success-icon">🎉</div>
+                    <h1 class="step-title">You're all set!</h1>
+                    <p class="step-subtitle">Your business is now live and ready to accept orders. Let's take a quick tour.</p>
+                    
+                    <div style="margin: 30px 0;">
+                        <h3 style="margin-bottom: 16px;">What's next?</h3>
+                        <ul style="text-align: left; line-height: 1.8;">
+                            <li>✅ Your menu is live and ready</li>
+                            <li>✅ AI agents can now place orders</li>
+                            <li>✅ You can manage orders in real-time</li>
+                            <li>✅ Customize your menu anytime</li>
+                        </ul>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="goToDashboard()">Go to Your Dashboard</button>
+                    <button class="btn btn-secondary" onclick="viewLiveMenu()" style="margin-top: 12px;">View Live Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let onboardingData = {
+            user: null,
+            business: null,
+            menu: null,
+            pricing: null
+        };
+        
+        // Initialize onboarding
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Onboarding: Page loaded');
+            
+            // Check if user is authenticated
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.log('Onboarding: No token found, redirecting to signup');
+                // Redirect to signup if not authenticated
+                window.location.href = 'signup.html';
+                return;
+            }
+            
+            console.log('Onboarding: Token found, loading onboarding interface');
+            await loadBusinessTypes();
+            updateProgress();
+            
+            // Don't automatically check progress - just start from current step
+            console.log('Onboarding: Starting from step 1');
+            currentStep = 1;
+            showStep(currentStep);
+            updateProgress();
+        });
+        
+        // Step navigation
+        async function nextStep() {
+            if (currentStep < 5) {
+                // Save current step progress
+                await saveStepProgress(currentStep);
+                
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+                
+                // Load step-specific content
+                if (currentStep === 3) {
+                    await loadMenuTemplates();
+                } else if (currentStep === 4) {
+                    await loadPricingContent();
+                }
+            }
+        }
+        
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+        
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            // Show current step
+            document.getElementById(`step${step}`).classList.add('active');
+            
+            // Update step indicators
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.remove('active', 'completed');
+                if (index + 1 === step) {
+                    dot.classList.add('active');
+                } else if (index + 1 < step) {
+                    dot.classList.add('completed');
+                }
+            });
+        }
+        
+        function updateProgress() {
+            const progress = (currentStep / 5) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+        
+        // Form handling - removed since signup is handled separately
+        
+        // Business types
+        async function loadBusinessTypes() {
+            try {
+                const response = await fetch('/api/business/types');
+                const types = await response.json();
+                
+                const container = document.getElementById('businessTypes');
+                container.innerHTML = types.map(type => `
+                    <div class="business-type-card" data-type="${type.name}">
+                        <div class="business-type-icon">${type.icon}</div>
+                        <div class="business-type-name">${type.name.charAt(0).toUpperCase() + type.name.slice(1)}</div>
+                        <div class="business-type-desc">${type.description}</div>
+                    </div>
+                `).join('');
+                
+                // Add click handlers
+                container.querySelectorAll('.business-type-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        container.querySelectorAll('.business-type-card').forEach(c => c.classList.remove('selected'));
+                        this.classList.add('selected');
+                        onboardingData.business = { type: this.dataset.type };
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading business types:', error);
+            }
+        }
+        
+        // Menu templates
+        async function loadMenuTemplates() {
+            try {
+                const businessType = onboardingData.business?.type || 'cafe';
+                const response = await fetch(`/api/menu/templates?business_type=${businessType}`);
+                const templates = await response.json();
+                
+                const container = document.getElementById('menuTemplates');
+                container.innerHTML = templates.map(template => `
+                    <div class="template-card" data-template-id="${template.id}">
+                        <div class="template-name">${template.name}</div>
+                        <div class="template-desc">${template.description}</div>
+                        <div class="template-items">6 items included</div>
+                    </div>
+                `).join('');
+                
+                // Add click handlers
+                container.querySelectorAll('.template-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        container.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                        this.classList.add('selected');
+                        onboardingData.menu = { templateId: this.dataset.templateId };
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading menu templates:', error);
+            }
+        }
+        
+        // Utility functions
+        function showError(step, message) {
+            const errorElement = document.getElementById(`error${step}`);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById(`success${step}`).style.display = 'none';
+        }
+        
+        function showSuccess(step, message) {
+            const successElement = document.getElementById(`success${step}`);
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            document.getElementById(`error${step}`).style.display = 'none';
+        }
+        
+        function hideMessages(step) {
+            document.getElementById(`error${step}`).style.display = 'none';
+            document.getElementById(`success${step}`).style.display = 'none';
+        }
+        
+        function setLoading(loading) {
+            const submitBtn = document.querySelector('.btn-primary');
+            if (loading) {
+                submitBtn.textContent = 'Creating Account...';
+                submitBtn.classList.add('loading');
+            } else {
+                submitBtn.textContent = 'Create Account & Continue';
+                submitBtn.classList.remove('loading');
+            }
+        }
+        
+        async function goToDashboard() {
+            console.log('Onboarding: Going to dashboard...');
+            
+            // Mark onboarding as completed via API
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const response = await fetch('/api/onboarding/progress', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            step: 5,
+                            completed: true,
+                            data: { completed_at: new Date().toISOString() }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        console.log('Onboarding: Marked as completed successfully via API');
+                        
+                        // Cache the completion status to avoid future API calls
+                        localStorage.setItem('onboarding_completed', 'true');
+                        
+                        // Force redirect to dashboard after successful API call
+                        console.log('Onboarding: Redirecting to dashboard...');
+                        window.location.href = 'index.html';
+                    } else {
+                        console.error('Onboarding: Failed to mark as completed via API');
+                        // Still redirect even if API call fails
+                        window.location.href = 'index.html';
+                    }
+                } catch (error) {
+                    console.error('Onboarding: Error marking as completed:', error);
+                    // Still redirect even if API call fails
+                    window.location.href = 'index.html';
+                }
+            } else {
+                console.error('Onboarding: No token found');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        function viewLiveMenu() {
+            // TODO: Implement live menu view
+            alert('Live menu feature coming soon!');
+        }
+        
+        async function saveStepProgress(step) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    await fetch('/api/onboarding/progress', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            step: step,
+                            completed: false,
+                            data: onboardingData
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error saving step progress:', error);
+                }
+            }
+        }
+        
+        async function loadPricingContent() {
+            const container = document.getElementById('pricingContent');
+            container.innerHTML = `
+                <div style="text-align: center; margin: 20px 0;">
+                    <h3 style="margin-bottom: 16px;">Pricing Setup</h3>
+                    <p style="color: #8e8e93; margin-bottom: 24px;">
+                        Your menu items have been added with suggested prices. 
+                        You can adjust them later in your dashboard.
+                    </p>
+                    
+                    <div style="background: #f8f8f8; padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <h4 style="margin-bottom: 12px;">Suggested Pricing Strategy:</h4>
+                        <ul style="text-align: left; line-height: 1.6; color: #666;">
+                            <li>• Start with competitive prices to attract customers</li>
+                            <li>• Consider your costs and desired profit margin</li>
+                            <li>• You can adjust prices anytime in your dashboard</li>
+                            <li>• Monitor sales and adjust based on performance</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #e8f5e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                        <strong>✅ Ready to go live!</strong> Your business is set up with basic pricing. 
+                        You can fine-tune everything later.
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function checkOnboardingProgress() {
+            try {
+                console.log('Checking onboarding progress...');
+                const response = await fetch('/api/onboarding/progress', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                console.log('Onboarding progress response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Onboarding progress data:', data);
+                    
+                    if (data.completed) {
+                        console.log('Onboarding: Already completed, redirecting to dashboard');
+                        window.location.href = 'index.html';
+                    } else {
+                        console.log('Onboarding not completed, current step:', data.current_step);
+                        currentStep = data.current_step || 1;
+                        showStep(currentStep);
+                        updateProgress();
+                        
+                        // Load step-specific content
+                        if (currentStep === 3) {
+                            await loadMenuTemplates();
+                        } else if (currentStep === 4) {
+                            await loadPricingContent();
+                        }
+                    }
+                } else {
+                    console.log('Onboarding progress check failed, starting from step 1');
+                    // If we can't check progress, start from step 1
+                    currentStep = 1;
+                    showStep(currentStep);
+                    updateProgress();
+                }
+            } catch (error) {
+                console.error('Error checking onboarding progress:', error);
+                // If there's an error, start from step 1
+                currentStep = 1;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+    </script>
+</body>
+</html> 
