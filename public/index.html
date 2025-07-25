@@ -19,16 +19,20 @@
         }
         
         .container {
-            max-width: 400px;
-            margin: 0 auto;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
             background: #fff;
-            min-height: 100vh;
+            padding: 0;
+            overflow: hidden;
         }
         
         .header {
-            padding: 60px 24px 20px;
+            padding: 20px;
             text-align: center;
             background: #fff;
+            border-bottom: 1px solid #000;
+            position: relative;
         }
         
         .cafe-name {
@@ -52,21 +56,21 @@
         
         .controls {
             display: flex;
+            flex-direction: column;
             gap: 12px;
-            justify-content: center;
-            margin-bottom: 16px;
         }
         
         .control-btn {
-            padding: 10px 20px;
+            padding: 15px 20px;
             border: 1px solid #000;
-            border-radius: 20px;
+            border-radius: 12px;
             background: #fff;
             color: #000;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 14px;
+            font-size: 16px;
+            text-align: left;
         }
         
         .control-btn:hover {
@@ -79,15 +83,16 @@
         }
         
         .toggle-btn {
-            padding: 8px 16px;
+            padding: 15px 20px;
             border: 1px solid #30d158;
-            border-radius: 16px;
+            border-radius: 12px;
             background: #fff;
             color: #30d158;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 14px;
+            font-size: 16px;
+            text-align: left;
         }
         
         .toggle-btn.online {
@@ -114,8 +119,118 @@
             100% { opacity: 1; }
         }
         
+        /* Clean Single Page Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 380px;
+            grid-template-rows: 1fr;
+            gap: 0;
+            height: calc(100vh - 100px);
+        }
+        
+        .controls-panel {
+            grid-column: 1;
+            grid-row: 1;
+            background: #fff;
+            border-right: 1px solid #000;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .main-content {
+            grid-column: 2;
+            grid-row: 1;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .stats-panel {
+            background: #fff;
+            border-bottom: 1px solid #000;
+            padding: 20px 24px;
+            flex-shrink: 0;
+        }
+        
+        .orders-panel {
+            background: #fff;
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+            position: relative;
+        }
+        
+        .orders-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #000;
+        }
+        
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .orders-count {
+            background: #000;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .orders-sort {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .sort-btn {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .sort-btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .sort-btn.active {
+            background: #000;
+            color: #fff;
+        }
+        
+        .feed-panel {
+            grid-column: 3;
+            grid-row: 1;
+            background: #fff;
+            border-left: 1px solid #000;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
         .orders {
-            padding: 0 24px 32px;
             display: none;
         }
         
@@ -124,11 +239,28 @@
         }
         
         .menu-section {
-            padding: 0 24px 32px;
             display: none;
         }
         
         .menu-section.active {
+            display: block;
+        }
+        
+        .stats-section {
+            display: none;
+        }
+        
+        .stats-section.active {
+            display: block;
+        }
+        
+        .detailed-stats-section {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .detailed-stats-section.active {
             display: block;
         }
         
@@ -214,11 +346,29 @@
         
         .order-card {
             background: #fff;
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 16px;
-            border: 1px solid #000;
+            border: 2px solid #000;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        
+        .order-card.new {
+            border-left: 4px solid #007aff;
+        }
+        
+        .order-card.preparing {
+            border-left: 4px solid #ff9500;
+        }
+        
+        .order-card.ready {
+            border-left: 4px solid #30d158;
         }
         
         .order-card.new {
@@ -238,11 +388,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
         }
         
         .order-id {
-            font-weight: 700;
-            font-size: 18px;
+            font-weight: 800;
+            font-size: 20px;
             color: #000;
             letter-spacing: -0.3px;
         }
@@ -251,6 +403,30 @@
             font-size: 14px;
             color: #8e8e93;
             font-weight: 500;
+        }
+        
+        .order-status-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .order-status-badge.new {
+            background: #007aff;
+            color: #fff;
+        }
+        
+        .order-status-badge.preparing {
+            background: #ff9500;
+            color: #fff;
+        }
+        
+        .order-status-badge.ready {
+            background: #30d158;
+            color: #fff;
         }
         
         .customer-info {
@@ -442,27 +618,321 @@
             font-weight: 700;
         }
         
-        @media (max-width: 480px) {
+        /* Stats Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 0;
+        }
+        
+        .stat-card {
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 10px;
+            padding: 10px 6px;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: #000;
+            margin-bottom: 2px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #8e8e93;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-period {
+            font-size: 10px;
+            color: #8e8e93;
+            margin-top: 2px;
+        }
+        
+        .growth-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        
+        .growth-up {
+            color: #30d158;
+        }
+        
+        .growth-down {
+            color: #ff3b30;
+        }
+        
+        .stats-section-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stats-header-text {
+            flex: 1;
+        }
+        
+        .refresh-btn {
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-radius: 12px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.2s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+        
+        .stats-section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        
+        .stats-section-subtitle {
+            font-size: 16px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .insight-card {
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .insight-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .insight-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+        
+        .insight-item-name {
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .insight-item-value {
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .top-item-badge {
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #000;
+            margin-left: 8px;
+        }
+        
+        .fun-stat {
+            background: #000;
+            color: #fff;
+            border: none;
+        }
+        
+        .fun-stat .stat-value,
+        .fun-stat .stat-label {
+            color: #fff;
+        }
+        
+        /* Activity Feed Styles */
+        .feed-content h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .activity-item:hover {
+            background: #f8f8f8;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-time {
+            font-size: 13px;
+            color: #8e8e93;
+            font-weight: 600;
+            min-width: 70px;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-action {
+            font-size: 15px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        
+        .activity-details {
+            font-size: 13px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+        
+        @media (max-width: 768px) {
             .container {
-                max-width: 100%;
+                width: 100vw;
+                height: 100vh;
+                padding: 0;
             }
             
-            .header {
-                padding: 50px 20px 24px;
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto auto;
+                gap: 0;
+                height: calc(100vh - 80px);
             }
             
-            .orders {
-                padding: 0 20px 24px;
+            .controls-panel {
+                grid-column: 1;
+                grid-row: 1;
+                border-right: none;
+                border-bottom: 1px solid #000;
+                padding: 16px;
+            }
+            
+            .main-content {
+                grid-column: 1;
+                grid-row: 2;
+                border-bottom: 1px solid #000;
+            }
+            
+            .stats-panel {
+                border-bottom: 1px solid #000;
+                padding: 16px;
+            }
+            
+            .orders-panel {
+                border-right: none;
+                border-bottom: 1px solid #000;
+                padding: 16px;
+            }
+            
+            .orders-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .orders-sort {
+                gap: 6px;
+            }
+            
+            .sort-btn {
+                padding: 6px 10px;
+                font-size: 10px;
+            }
+            
+            .feed-panel {
+                grid-column: 1;
+                grid-row: 3;
+                border-left: none;
+                padding: 16px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 10px;
+            }
+            
+            .stat-value {
+                font-size: 18px;
+            }
+            
+            .stat-label {
+                font-size: 11px;
             }
             
             .sound-toggle {
-                top: 40px;
-                right: 20px;
+                top: 20px;
+                right: 10px;
             }
             
             .logout-btn {
-                top: 40px;
-                left: 20px;
+                top: 20px;
+                left: 10px;
             }
         }
         
@@ -481,6 +951,28 @@
                 transform: translateY(0);
             }
         }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
     </style>
 </head>
 <body>
@@ -490,12 +982,6 @@
             <div class="status">
                 <div class="status-dot"></div>
                 <span id="statusText">Online • <span class="order-count" id="orderCount">3</span> orders</span>
-            </div>
-            
-            <div class="controls">
-                <button class="control-btn active" onclick="showSection('orders')" id="ordersBtn">Orders</button>
-                <button class="control-btn" onclick="showSection('menu')" id="menuBtn">Menu</button>
-                <button class="toggle-btn online" onclick="toggleOnlineStatus()" id="toggleBtn">🟢 Online</button>
             </div>
         </div>
         
@@ -507,12 +993,67 @@
             🔊 Sound
         </div>
         
-        <div class="orders active" id="orders">
-            <!-- Orders will be populated here -->
-        </div>
-        
-        <div class="menu-section" id="menu">
-            <!-- Menu items will be populated here -->
+        <div class="dashboard-grid">
+            <!-- Controls Panel (Top Left) -->
+            <div class="controls-panel">
+                <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 700;">Quick Actions</h3>
+                <div class="controls">
+                    <button class="control-btn active" onclick="showSection('orders')" id="ordersBtn">📋 Orders</button>
+                    <button class="control-btn" onclick="showSection('menu')" id="menuBtn">🍽️ Menu</button>
+                    <button class="control-btn" onclick="showSection('stats')" id="statsBtn">📊 Stats</button>
+                    <button class="toggle-btn online" onclick="toggleOnlineStatus()" id="toggleBtn">🟢 Online</button>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <!-- Stats Panel (Top) -->
+                <div class="stats-panel" id="stats">
+                    <!-- Stats will be populated here -->
+                </div>
+                
+                <!-- Orders Panel (Bottom) -->
+                <div class="orders-panel">
+                    <div class="orders-header">
+                        <h3 style="margin: 0; font-size: 20px; font-weight: 700;">📋 Active Orders</h3>
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            <div class="orders-sort">
+                                <button class="sort-btn active" onclick="sortOrders('time')" id="sortTimeBtn">
+                                    ⏰ Time
+                                </button>
+                                <button class="sort-btn" onclick="sortOrders('status')" id="sortStatusBtn">
+                                    🏷️ Status
+                                </button>
+                                <button class="sort-btn" onclick="sortOrders('amount')" id="sortAmountBtn">
+                                    💰 Amount
+                                </button>
+                            </div>
+                            <div class="orders-count" id="ordersCount">3 pending</div>
+                        </div>
+                    </div>
+                    <div class="orders active" id="orders">
+                        <!-- Orders will be populated here -->
+                    </div>
+                    
+                    <div class="menu-section" id="menu">
+                        <!-- Menu items will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feed Panel (Bottom Right) -->
+            <div class="feed-panel">
+                <div class="feed-content" id="feedContent" style="display: block;">
+                    <h3>📈 Live Activity Feed</h3>
+                    <div id="activityFeed">
+                        <!-- Activity feed will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="detailed-stats-section" id="detailedStats" style="display: none;">
+                    <!-- Detailed stats will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -522,42 +1063,10 @@
         let currentSection = 'orders';
         let currentUser = null;
         let isCheckingOnboarding = false;
+        let statsData = null;
+        let currentSort = 'time';
         
-        let orders = [
-            {
-                id: 'ALX-001',
-                customer: 'Sarah M.',
-                time: '2m',
-                status: 'new',
-                items: [
-                    { name: 'Cappuccino Large', price: 4.50 },
-                    { name: 'Croissant', price: 3.20 }
-                ],
-                total: 7.70
-            },
-            {
-                id: 'ALX-002',
-                customer: 'Mike R.',
-                time: '5m',
-                status: 'preparing',
-                items: [
-                    { name: 'Americano', price: 3.00 },
-                    { name: 'Blueberry Muffin', price: 2.80 }
-                ],
-                total: 5.80
-            },
-            {
-                id: 'ALX-003',
-                customer: 'Emma K.',
-                time: '8m',
-                status: 'ready',
-                items: [
-                    { name: 'Oat Latte', price: 4.20 },
-                    { name: 'Avocado Toast', price: 6.50 }
-                ],
-                total: 10.70
-            }
-        ];
+        let orders = [];
 
         let menuItems = [
             { id: 1, name: 'Espresso', price: 2.50, available: true },
@@ -685,16 +1194,91 @@
             // Update buttons
             document.getElementById('ordersBtn').classList.toggle('active', section === 'orders');
             document.getElementById('menuBtn').classList.toggle('active', section === 'menu');
+            document.getElementById('statsBtn').classList.toggle('active', section === 'stats');
             
             // Update sections
             document.getElementById('orders').classList.toggle('active', section === 'orders');
             document.getElementById('menu').classList.toggle('active', section === 'menu');
             
-            if (section === 'orders') {
-                renderOrders();
-            } else if (section === 'menu') {
-                renderMenu();
+            // Update feed panel content
+            const feedContent = document.getElementById('feedContent');
+            const detailedStats = document.getElementById('detailedStats');
+            
+            if (section === 'stats') {
+                feedContent.style.display = 'none';
+                detailedStats.style.display = 'block';
+                loadDetailedStats();
+            } else {
+                feedContent.style.display = 'block';
+                detailedStats.style.display = 'none';
+                if (section === 'orders') {
+                    renderOrders();
+                } else if (section === 'menu') {
+                    renderMenu();
+                }
             }
+        }
+        
+        async function loadActivityFeed() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch('/api/activity', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const activities = await response.json();
+                    renderActivityFeed(activities);
+                } else {
+                    console.error('Failed to load activity feed');
+                }
+            } catch (error) {
+                console.error('Error loading activity feed:', error);
+            }
+        }
+        
+        function renderActivityFeed(activities = []) {
+            const feedContainer = document.getElementById('activityFeed');
+            
+            if (activities.length === 0) {
+                feedContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #8e8e93;">
+                        <div style="font-size: 24px; margin-bottom: 16px;">📊</div>
+                        <div>No recent activity</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const getIcon = (status) => {
+                switch(status) {
+                    case 'new': return '🆕';
+                    case 'preparing': return '⏳';
+                    case 'ready': return '📦';
+                    case 'completed': return '✅';
+                    case 'cancelled': return '❌';
+                    default: return '📋';
+                }
+            };
+            
+            feedContainer.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-time">${activity.time}</div>
+                    <div class="activity-content">
+                        <div class="activity-action">
+                            <span style="margin-right: 8px;">${getIcon(activity.status)}</span>
+                            ${activity.action}
+                        </div>
+                        <div class="activity-details">
+                            <strong>${activity.customer}</strong> • ${activity.amount}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function toggleOnlineStatus() {
@@ -789,9 +1373,135 @@
             }
         }
 
+        async function loadOrders() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch('/api/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const ordersData = await response.json();
+                    orders = ordersData
+                        .filter(order => order.status !== 'completed' && order.status !== 'cancelled')
+                        .map(order => ({
+                            id: order.order_id,
+                            customer: order.customer,
+                            time: getTimeAgo(order.created_at),
+                            status: order.status,
+                            items: order.items,
+                            total: order.total
+                        }));
+                    
+                    renderOrders();
+                } else {
+                    console.error('Failed to load orders');
+                }
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+        
+        async function checkForNewOrders() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch('/api/orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const ordersData = await response.json();
+                    const newOrders = ordersData
+                        .filter(order => order.status !== 'completed' && order.status !== 'cancelled')
+                        .map(order => ({
+                            id: order.order_id,
+                            customer: order.customer,
+                            time: getTimeAgo(order.created_at),
+                            status: order.status,
+                            items: order.items,
+                            total: order.total
+                        }));
+                    
+                    // Check if we have new orders
+                    const currentOrderIds = orders.map(o => o.id);
+                    const incomingOrderIds = newOrders.map(o => o.id);
+                    
+                    // Find truly new orders (not in current list)
+                    const trulyNewOrders = newOrders.filter(order => !currentOrderIds.includes(order.id));
+                    
+                    if (trulyNewOrders.length > 0) {
+                        console.log('New orders detected:', trulyNewOrders);
+                        playSound(); // Play notification sound
+                        
+                        // Update orders array
+                        orders = newOrders;
+                        renderOrders();
+                        loadActivityFeed(); // Refresh activity feed
+                        
+                        // Show notification
+                        showNewOrderNotification(trulyNewOrders.length);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking for new orders:', error);
+            }
+        }
+        
+        function showNewOrderNotification(count) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: #007aff;
+                color: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 16px;
+                z-index: 1000;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notification.innerHTML = `🆕 ${count} new order${count > 1 ? 's' : ''} received!`;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        function getTimeAgo(createdAt) {
+            const now = new Date();
+            const created = new Date(createdAt);
+            const diffMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
+            
+            if (diffMinutes < 1) return 'just now';
+            if (diffMinutes < 60) return `${diffMinutes}m`;
+            if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h`;
+            return `${Math.floor(diffMinutes / 1440)}d`;
+        }
+        
         function renderOrders() {
             const ordersContainer = document.getElementById('orders');
             const orderCount = document.getElementById('orderCount');
+            const ordersCountElement = document.getElementById('ordersCount');
             
             if (orders.length === 0) {
                 ordersContainer.innerHTML = `
@@ -802,17 +1512,22 @@
                     </div>
                 `;
                 orderCount.textContent = '0';
+                if (ordersCountElement) ordersCountElement.textContent = '0 pending';
                 return;
             }
 
             const pendingCount = orders.filter(o => o.status !== 'completed').length;
             orderCount.textContent = pendingCount;
+            if (ordersCountElement) ordersCountElement.textContent = `${pendingCount} pending`;
 
             ordersContainer.innerHTML = orders.map(order => `
                 <div class="order-card ${order.status}">
                     <div class="order-header">
                         <div class="order-id">${order.id}</div>
-                        <div class="order-time">${order.time}</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div class="order-status-badge ${order.status}">${getStatusText(order.status)}</div>
+                            <div class="order-time">${order.time}</div>
+                        </div>
                     </div>
                     <div class="customer-info">
                         <div class="customer-avatar">${order.customer.charAt(0)}</div>
@@ -861,36 +1576,102 @@
             }
         }
 
-        function acceptOrder(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = 'preparing';
-                playSound();
-                renderOrders();
-                console.log('Order accepted:', orderId);
+        async function acceptOrder(orderId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/accept`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    playSound();
+                    await loadOrders();
+                    await loadActivityFeed();
+                    console.log('Order accepted:', orderId);
+                } else {
+                    console.error('Failed to accept order');
+                }
+            } catch (error) {
+                console.error('Error accepting order:', error);
             }
         }
 
-        function rejectOrder(orderId) {
-            orders = orders.filter(o => o.id !== orderId);
-            renderOrders();
-            console.log('Order rejected:', orderId);
-        }
-
-        function markReady(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = 'ready';
-                playSound();
-                renderOrders();
-                console.log('Order ready:', orderId);
+        async function rejectOrder(orderId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    await loadOrders();
+                    await loadActivityFeed();
+                    console.log('Order rejected:', orderId);
+                } else {
+                    console.error('Failed to reject order');
+                }
+            } catch (error) {
+                console.error('Error rejecting order:', error);
             }
         }
 
-        function completeOrder(orderId) {
-            orders = orders.filter(o => o.id !== orderId);
-            renderOrders();
-            console.log('Order completed:', orderId);
+        async function markReady(orderId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/ready`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    playSound();
+                    await loadOrders();
+                    await loadActivityFeed();
+                    console.log('Order ready:', orderId);
+                } else {
+                    console.error('Failed to mark order ready');
+                }
+            } catch (error) {
+                console.error('Error marking order ready:', error);
+            }
+        }
+
+        async function completeOrder(orderId) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`/api/orders/${orderId}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    await loadOrders();
+                    await loadActivityFeed();
+                    console.log('Order completed:', orderId);
+                } else {
+                    console.error('Failed to complete order');
+                }
+            } catch (error) {
+                console.error('Error completing order:', error);
+            }
         }
 
         function toggleSound() {
@@ -960,9 +1741,276 @@
             }
         }
 
+        // Stats functions
+        async function loadStats() {
+            const token = localStorage.getItem('token');
+            if (!token) return Promise.resolve();
+            
+            const statsContainer = document.getElementById('stats');
+            statsContainer.innerHTML = `
+                <div class="stats-section-header">
+                    <div class="stats-header-text">
+                        <div class="stats-section-title">Quick Stats</div>
+                        <div class="stats-section-subtitle">Key metrics at a glance</div>
+                    </div>
+                    <button class="refresh-btn" onclick="loadStats()">🔄 Refresh</button>
+                </div>
+                <div style="text-align: center; padding: 40px; color: #8e8e93;">
+                    <div style="font-size: 24px; margin-bottom: 16px;">📊</div>
+                    <div>Loading your stats...</div>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    statsData = await response.json();
+                    renderStats();
+                    return Promise.resolve();
+                } else {
+                    console.error('Failed to load stats');
+                    statsContainer.innerHTML = `
+                        <div class="stats-section-header">
+                            <div class="stats-header-text">
+                                <div class="stats-section-title">Quick Stats</div>
+                                <div class="stats-section-subtitle">Key metrics at a glance</div>
+                            </div>
+                            <button class="refresh-btn" onclick="loadStats()">🔄 Refresh</button>
+                        </div>
+                        <div style="text-align: center; padding: 40px; color: #ff3b30;">
+                            <div style="font-size: 24px; margin-bottom: 16px;">❌</div>
+                            <div>Failed to load stats. Please try again.</div>
+                        </div>
+                    `;
+                    return Promise.reject('Failed to load stats');
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+                statsContainer.innerHTML = `
+                    <div class="stats-section-header">
+                        <div class="stats-header-text">
+                            <div class="stats-section-title">Quick Stats</div>
+                            <div class="stats-section-subtitle">Key metrics at a glance</div>
+                        </div>
+                        <button class="refresh-btn" onclick="loadStats()">🔄 Refresh</button>
+                    </div>
+                    <div style="text-align: center; padding: 40px; color: #ff3b30;">
+                        <div style="font-size: 24px; margin-bottom: 16px;">❌</div>
+                        <div>Error loading stats. Please try again.</div>
+                    </div>
+                `;
+                return Promise.reject(error);
+            }
+        }
+        
+        function renderStats() {
+            if (!statsData) return;
+            
+            const statsContainer = document.getElementById('stats');
+            
+            statsContainer.innerHTML = `
+                <div class="stats-section-header">
+                    <div class="stats-header-text">
+                        <div class="stats-section-title">Quick Stats</div>
+                        <div class="stats-section-subtitle">Key metrics at a glance</div>
+                    </div>
+                    <button class="refresh-btn" onclick="loadStats()">🔄 Refresh</button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">$${statsData.today.revenue.toFixed(2)}</div>
+                        <div class="stat-label">💰 Today</div>
+                        <div class="stat-period">${statsData.today.orders} orders</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-value">$${statsData.week.revenue.toFixed(2)}</div>
+                        <div class="stat-label">📈 This Week</div>
+                        <div class="stat-period">${statsData.week.orders} orders</div>
+                        ${statsData.growth.percentage !== 0 ? `
+                            <div class="growth-indicator ${statsData.growth.direction === 'up' ? 'growth-up' : 'growth-down'}">
+                                ${statsData.growth.direction === 'up' ? '↗' : '↘'} ${Math.abs(statsData.growth.percentage)}%
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="stat-card fun-stat">
+                        <div class="stat-value">$${statsData.allTime.revenue.toFixed(2)}</div>
+                        <div class="stat-label">🏆 All Time</div>
+                        <div class="stat-period">${statsData.allTime.orders} orders</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function loadDetailedStats() {
+            console.log('Loading detailed stats...');
+            const detailedStatsContainer = document.getElementById('detailedStats');
+            
+            if (!statsData) {
+                console.log('No stats data available, loading stats first...');
+                loadStats().then(() => {
+                    if (statsData) {
+                        loadDetailedStats();
+                    }
+                });
+                detailedStatsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #8e8e93;">
+                        <div style="font-size: 24px; margin-bottom: 16px;">📊</div>
+                        <div>Loading detailed stats...</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            detailedStatsContainer.innerHTML = `
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 20px; font-weight: 700; color: #000; margin-bottom: 8px;">📊 Detailed Business Insights</h3>
+                    <p style="color: #8e8e93; font-size: 14px;">Comprehensive performance analysis</p>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 16px; font-weight: 700; color: #000; margin-bottom: 12px;">💰 Revenue Breakdown</h4>
+                    <div style="background: #fff; border: 1px solid #000; border-radius: 12px; padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="font-weight: 600;">Today</span>
+                            <span style="font-weight: 700;">$${statsData.today.revenue.toFixed(2)} (${statsData.today.orders} orders)</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="font-weight: 600;">This Week</span>
+                            <span style="font-weight: 700;">$${statsData.week.revenue.toFixed(2)} (${statsData.week.orders} orders)</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="font-weight: 600;">This Month</span>
+                            <span style="font-weight: 700;">$${statsData.month.revenue.toFixed(2)} (${statsData.month.orders} orders)</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                            <span style="font-weight: 600;">All Time</span>
+                            <span style="font-weight: 700;">$${statsData.allTime.revenue.toFixed(2)} (${statsData.allTime.orders} orders)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 16px; font-weight: 700; color: #000; margin-bottom: 12px;">🔥 Top Selling Items (30 days)</h4>
+                    <div style="background: #fff; border: 1px solid #000; border-radius: 12px; padding: 16px;">
+                        ${statsData.topItems && statsData.topItems.length > 0 ? 
+                            statsData.topItems.map((item, index) => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; ${index < statsData.topItems.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="background: #000; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">${index + 1}</span>
+                                        <span style="font-weight: 600;">${item.item_names}</span>
+                                    </div>
+                                    <span style="font-weight: 700;">${item.order_count} orders</span>
+                                </div>
+                            `).join('') : 
+                            '<div style="text-align: center; padding: 20px; color: #8e8e93;">No data available</div>'
+                        }
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 16px; font-weight: 700; color: #000; margin-bottom: 12px;">⏰ Busiest Hours</h4>
+                    <div style="background: #fff; border: 1px solid #000; border-radius: 12px; padding: 16px;">
+                        ${statsData.busyHours && statsData.busyHours.length > 0 ? 
+                            statsData.busyHours.map((hour, index) => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; ${index < statsData.busyHours.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
+                                    <span style="font-weight: 600;">${formatHour(hour.hour)}</span>
+                                    <span style="font-weight: 700;">${hour.order_count} orders</span>
+                                </div>
+                            `).join('') : 
+                            '<div style="text-align: center; padding: 20px; color: #8e8e93;">No data available</div>'
+                        }
+                    </div>
+                </div>
+                
+                ${statsData.growth.percentage !== 0 ? `
+                    <div style="margin-bottom: 24px;">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #000; margin-bottom: 12px;">📈 Growth Analysis</h4>
+                        <div style="background: #fff; border: 1px solid #000; border-radius: 12px; padding: 16px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 24px;">${statsData.growth.direction === 'up' ? '↗' : '↘'}</span>
+                                <div>
+                                    <div style="font-weight: 700; color: ${statsData.growth.direction === 'up' ? '#30d158' : '#ff3b30'};">
+                                        ${statsData.growth.direction === 'up' ? '+' : '-'}${Math.abs(statsData.growth.percentage)}%
+                                    </div>
+                                    <div style="font-size: 12px; color: #8e8e93;">Week over week revenue growth</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+        
+        function formatHour(hour) {
+            const hourNum = parseInt(hour);
+            if (hourNum === 0) return '12 AM';
+            if (hourNum === 12) return '12 PM';
+            if (hourNum > 12) return `${hourNum - 12} PM`;
+            return `${hourNum} AM`;
+        }
+        
+        function getStatusText(status) {
+            switch(status) {
+                case 'new': return '🆕 NEW';
+                case 'preparing': return '⏳ PREPARING';
+                case 'ready': return '✅ READY';
+                default: return status.toUpperCase();
+            }
+        }
+        
+        function sortOrders(sortBy) {
+            currentSort = sortBy;
+            
+            // Update button states
+            document.getElementById('sortTimeBtn').classList.toggle('active', sortBy === 'time');
+            document.getElementById('sortStatusBtn').classList.toggle('active', sortBy === 'status');
+            document.getElementById('sortAmountBtn').classList.toggle('active', sortBy === 'amount');
+            
+            // Sort orders based on criteria
+            const sortedOrders = [...orders].sort((a, b) => {
+                switch(sortBy) {
+                    case 'time':
+                        // Sort by time (newest first)
+                        const timeA = parseInt(a.time.replace('m', ''));
+                        const timeB = parseInt(b.time.replace('m', ''));
+                        return timeA - timeB;
+                    case 'status':
+                        // Sort by status priority: new > preparing > ready
+                        const statusPriority = { 'new': 1, 'preparing': 2, 'ready': 3 };
+                        return statusPriority[a.status] - statusPriority[b.status];
+                    case 'amount':
+                        // Sort by total amount (highest first)
+                        return b.total - a.total;
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Update orders array and re-render
+            orders = sortedOrders;
+            renderOrders();
+        }
+
         // Initialize
         checkAuth();
-        renderOrders();
+        loadOrders();
+        loadStats();
+        loadActivityFeed();
+
+        // Real-time order polling (check for new orders every 5 seconds)
+        setInterval(async () => {
+            if (isOnline && currentSection === 'orders') {
+                await checkForNewOrders();
+            }
+        }, 5000);
 
         // Simulate new orders for demo (only when online)
         setInterval(() => {

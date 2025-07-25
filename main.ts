@@ -175,6 +175,9 @@ async function initDatabase() {
   
   // Insert default menu templates
   await insertDefaultMenuTemplates();
+  
+  // Insert sample orders for demo stats
+  await insertSampleOrders();
 }
 
 // Insert default menu templates
@@ -230,6 +233,183 @@ async function insertDefaultMenuTemplates() {
         [templateId[0].id, ...item]
       );
     }
+  }
+}
+
+// Insert sample orders for demo stats
+async function insertSampleOrders() {
+  try {
+    // Check if we already have sample orders
+    const existingOrders = await db.query("SELECT COUNT(*) as count FROM orders");
+    if (existingOrders[0][0] > 0) {
+      console.log("Sample orders already exist, skipping...");
+      return;
+    }
+    
+    // Get a user ID to associate orders with
+    const users = await db.query("SELECT id FROM users LIMIT 1");
+    if (users.length === 0) {
+      console.log("No users found, skipping sample orders...");
+      return;
+    }
+    
+    const userId = users[0][0];
+    
+    // Sample orders with different dates for stats
+    const sampleOrders = [
+      // Today's orders
+      {
+        orderId: "DEMO-001",
+        customer: "Sarah M.",
+        items: JSON.stringify([
+          { name: "Cappuccino", price: 4.00 },
+          { name: "Croissant", price: 3.20 }
+        ]),
+        total: 7.20,
+        status: "completed",
+        daysAgo: 0
+      },
+      {
+        orderId: "DEMO-002", 
+        customer: "Mike R.",
+        items: JSON.stringify([
+          { name: "Americano", price: 3.00 },
+          { name: "Blueberry Muffin", price: 2.80 }
+        ]),
+        total: 5.80,
+        status: "completed",
+        daysAgo: 0
+      },
+      {
+        orderId: "DEMO-003",
+        customer: "Emma K.",
+        items: JSON.stringify([
+          { name: "Latte", price: 4.20 },
+          { name: "Avocado Toast", price: 6.50 }
+        ]),
+        total: 10.70,
+        status: "completed",
+        daysAgo: 0
+      },
+      
+      // This week's orders
+      {
+        orderId: "DEMO-004",
+        customer: "Alex D.",
+        items: JSON.stringify([
+          { name: "Espresso", price: 2.50 },
+          { name: "Bagel", price: 2.80 }
+        ]),
+        total: 5.30,
+        status: "completed",
+        daysAgo: 1
+      },
+      {
+        orderId: "DEMO-005",
+        customer: "Jordan W.",
+        items: JSON.stringify([
+          { name: "Cold Brew", price: 3.50 },
+          { name: "Chocolate Cake", price: 6.00 }
+        ]),
+        total: 9.50,
+        status: "completed",
+        daysAgo: 2
+      },
+      {
+        orderId: "DEMO-006",
+        customer: "Taylor B.",
+        items: JSON.stringify([
+          { name: "Cappuccino", price: 4.00 }
+        ]),
+        total: 4.00,
+        status: "completed",
+        daysAgo: 3
+      },
+      
+      // This month's orders
+      {
+        orderId: "DEMO-007",
+        customer: "Morgan C.",
+        items: JSON.stringify([
+          { name: "Americano", price: 3.00 },
+          { name: "Croissant", price: 3.20 },
+          { name: "Blueberry Muffin", price: 2.80 }
+        ]),
+        total: 9.00,
+        status: "completed",
+        daysAgo: 5
+      },
+      {
+        orderId: "DEMO-008",
+        customer: "Casey R.",
+        items: JSON.stringify([
+          { name: "Latte", price: 4.20 },
+          { name: "Avocado Toast", price: 6.50 }
+        ]),
+        total: 10.70,
+        status: "completed",
+        daysAgo: 7
+      },
+      {
+        orderId: "DEMO-009",
+        customer: "Riley S.",
+        items: JSON.stringify([
+          { name: "Espresso", price: 2.50 }
+        ]),
+        total: 2.50,
+        status: "completed",
+        daysAgo: 10
+      },
+      {
+        orderId: "DEMO-010",
+        customer: "Quinn T.",
+        items: JSON.stringify([
+          { name: "Cappuccino", price: 4.00 },
+          { name: "Bagel", price: 2.80 }
+        ]),
+        total: 6.80,
+        status: "completed",
+        daysAgo: 15
+      }
+    ];
+    
+    for (const order of sampleOrders) {
+      const orderDate = new Date();
+      orderDate.setDate(orderDate.getDate() - order.daysAgo);
+      
+      await db.query(
+        "INSERT INTO orders (user_id, order_id, customer, status, items, total, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [userId, order.orderId, order.customer, order.status, order.items, order.total, orderDate.toISOString()]
+      );
+    }
+    
+    console.log("Sample orders inserted successfully");
+    
+    // Also insert some sample menu items
+    const sampleMenuItems = [
+      ["Espresso", "Single shot of espresso", "drinks", "coffee", 2.50, 1],
+      ["Americano", "Espresso with hot water", "drinks", "coffee", 3.00, 1],
+      ["Cappuccino", "Espresso with steamed milk", "drinks", "coffee", 4.00, 1],
+      ["Latte", "Espresso with steamed milk and foam", "drinks", "coffee", 4.20, 1],
+      ["Oat Latte", "Latte with oat milk", "drinks", "coffee", 4.50, 1],
+      ["Cold Brew", "Smooth cold brewed coffee", "drinks", "coffee", 3.50, 1],
+      ["Croissant", "Buttery French pastry", "food", "pastries", 3.20, 1],
+      ["Bagel", "Fresh baked bagel", "food", "pastries", 2.80, 1],
+      ["Blueberry Muffin", "Fresh baked muffin", "food", "pastries", 2.80, 1],
+      ["Avocado Toast", "Sourdough with avocado", "food", "breakfast", 6.50, 1],
+      ["Chocolate Cake", "Rich chocolate layer cake", "food", "desserts", 6.00, 1]
+    ];
+    
+    for (const item of sampleMenuItems) {
+      await db.query(
+        "INSERT INTO menu_items (user_id, name, description, category, subcategory, price, available) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [userId, ...item]
+      );
+    }
+    
+    console.log("Sample menu items inserted successfully");
+  } catch (error) {
+    console.error("Error inserting sample orders:", error);
   }
 }
 
@@ -426,8 +606,22 @@ router.get("/api/orders", authMiddleware, async (ctx) => {
     );
     
     ctx.response.body = orders.map(order => ({
-      ...order,
-      items: JSON.parse(order.items)
+      id: order[0],
+      user_id: order[1],
+      order_id: order[2],
+      customer: order[3],
+      customer_phone: order[4],
+      status: order[5],
+      items: JSON.parse(order[6]),
+      total: order[7],
+      agent_id: order[8],
+      session_id: order[9],
+      pickup_time: order[10],
+      estimated_ready_time: order[11],
+      cancellation_deadline: order[12],
+      special_instructions: order[13],
+      order_source: order[14],
+      created_at: order[15]
     }));
   } catch (error) {
     console.error("Get orders error:", error);
@@ -471,6 +665,136 @@ router.put("/api/orders/:orderId/status", authMiddleware, async (ctx) => {
     ctx.response.body = { message: "Order status updated" };
   } catch (error) {
     console.error("Update order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Order action endpoints
+router.post("/api/orders/:orderId/accept", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const orderId = ctx.params.orderId;
+    
+    await db.query(
+      "UPDATE orders SET status = 'preparing' WHERE user_id = ? AND order_id = ?",
+      [userId, orderId]
+    );
+    
+    ctx.response.body = { message: "Order accepted" };
+  } catch (error) {
+    console.error("Accept order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+router.post("/api/orders/:orderId/reject", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const orderId = ctx.params.orderId;
+    
+    await db.query(
+      "UPDATE orders SET status = 'cancelled' WHERE user_id = ? AND order_id = ?",
+      [userId, orderId]
+    );
+    
+    ctx.response.body = { message: "Order rejected" };
+  } catch (error) {
+    console.error("Reject order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+router.post("/api/orders/:orderId/ready", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const orderId = ctx.params.orderId;
+    
+    await db.query(
+      "UPDATE orders SET status = 'ready' WHERE user_id = ? AND order_id = ?",
+      [userId, orderId]
+    );
+    
+    ctx.response.body = { message: "Order ready" };
+  } catch (error) {
+    console.error("Mark ready error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+router.post("/api/orders/:orderId/complete", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const orderId = ctx.params.orderId;
+    
+    await db.query(
+      "UPDATE orders SET status = 'completed' WHERE user_id = ? AND order_id = ?",
+      [userId, orderId]
+    );
+    
+    ctx.response.body = { message: "Order completed" };
+  } catch (error) {
+    console.error("Complete order error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Activity feed endpoint
+router.get("/api/activity", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    
+    // Get recent order activities
+    const activities = await db.query(
+      `SELECT 
+        order_id,
+        customer,
+        status,
+        total,
+        created_at,
+        CASE 
+          WHEN status = 'new' THEN 'New order received'
+          WHEN status = 'preparing' THEN 'Order started preparing'
+          WHEN status = 'ready' THEN 'Order ready for pickup'
+          WHEN status = 'completed' THEN 'Order completed'
+          WHEN status = 'cancelled' THEN 'Order cancelled'
+          ELSE 'Order updated'
+        END as action
+       FROM orders 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC 
+       LIMIT 20`,
+      [userId]
+    );
+    
+    const formattedActivities = activities.map((activity: any) => {
+      const createdAt = new Date(activity[4]);
+      const now = new Date();
+      const diffMinutes = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
+      
+      let timeAgo;
+      if (diffMinutes < 1) timeAgo = 'just now';
+      else if (diffMinutes < 60) timeAgo = `${diffMinutes}m ago`;
+      else if (diffMinutes < 1440) timeAgo = `${Math.floor(diffMinutes / 60)}h ago`;
+      else timeAgo = `${Math.floor(diffMinutes / 1440)}d ago`;
+      
+      return {
+        time: timeAgo,
+        action: activity[5],
+        customer: activity[1],
+        amount: `$${activity[3].toFixed(2)}`,
+        status: activity[2],
+        orderId: activity[0]
+      };
+    });
+    
+    ctx.response.body = formattedActivities;
+  } catch (error) {
+    console.error("Get activity error:", error);
     ctx.response.status = 500;
     ctx.response.body = { message: "Internal server error" };
   }
@@ -663,6 +987,173 @@ router.post("/api/business/status", authMiddleware, async (ctx) => {
     };
   } catch (error) {
     console.error("Update business status error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Stats routes
+router.get("/api/stats", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // Today's stats
+    const todayStats = await db.query(
+      `SELECT 
+        COUNT(*) as order_count,
+        SUM(total) as total_revenue,
+        AVG(total) as avg_order_value
+       FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) = ? 
+       AND status != 'cancelled'`,
+      [userId, today]
+    );
+    
+    // Past 7 days stats
+    const weekStats = await db.query(
+      `SELECT 
+        COUNT(*) as order_count,
+        SUM(total) as total_revenue,
+        AVG(total) as avg_order_value
+       FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) >= ? 
+       AND status != 'cancelled'`,
+      [userId, sevenDaysAgo]
+    );
+    
+    // Past 30 days stats
+    const monthStats = await db.query(
+      `SELECT 
+        COUNT(*) as order_count,
+        SUM(total) as total_revenue,
+        AVG(total) as avg_order_value
+       FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) >= ? 
+       AND status != 'cancelled'`,
+      [userId, thirtyDaysAgo]
+    );
+    
+    // Top selling items (last 30 days) - parse JSON items
+    const topItemsRaw = await db.query(
+      `SELECT 
+        items,
+        COUNT(*) as order_count
+       FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) >= ? 
+       AND status != 'cancelled'
+       GROUP BY items
+       ORDER BY order_count DESC
+       LIMIT 5`,
+      [userId, thirtyDaysAgo]
+    );
+    
+    // Parse the JSON items to extract item names
+    const topItems = topItemsRaw.map((row: any) => {
+      try {
+        const items = JSON.parse(row[0]);
+        const itemNames = items.map((item: any) => item.name).join(', ');
+        return [itemNames, row[1]];
+      } catch (error) {
+        console.error('Error parsing items JSON:', error);
+        return ['Unknown Item', row[1]];
+      }
+    });
+    
+    // Busiest hours (last 30 days)
+    const busyHours = await db.query(
+      `SELECT 
+        strftime('%H', created_at) as hour,
+        COUNT(*) as order_count
+       FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) >= ? 
+       AND status != 'cancelled'
+       GROUP BY strftime('%H', created_at)
+       ORDER BY order_count DESC
+       LIMIT 5`,
+      [userId, thirtyDaysAgo]
+    );
+    
+    // Fun stats
+    const totalOrders = await db.query(
+      "SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status != 'cancelled'",
+      [userId]
+    );
+    
+    const totalRevenue = await db.query(
+      "SELECT SUM(total) as total FROM orders WHERE user_id = ? AND status != 'cancelled'",
+      [userId]
+    );
+    
+    const avgOrderValue = await db.query(
+      "SELECT AVG(total) as avg FROM orders WHERE user_id = ? AND status != 'cancelled'",
+      [userId]
+    );
+    
+    // Calculate growth (compare this week to last week)
+    const lastWeekStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const lastWeekEnd = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const lastWeekRevenue = await db.query(
+      `SELECT SUM(total) as total FROM orders 
+       WHERE user_id = ? 
+       AND DATE(created_at) >= ? 
+       AND DATE(created_at) < ? 
+       AND status != 'cancelled'`,
+      [userId, lastWeekStart, lastWeekEnd]
+    );
+    
+    const currentWeekRevenue = weekStats[0][1] || 0;
+    const lastWeekRevenueValue = lastWeekRevenue[0][0] || 0;
+    const growthPercentage = lastWeekRevenueValue > 0 
+      ? ((currentWeekRevenue - lastWeekRevenueValue) / lastWeekRevenueValue * 100).toFixed(1)
+      : "0";
+    
+    ctx.response.body = {
+      today: {
+        orders: todayStats[0][0] || 0,
+        revenue: todayStats[0][1] || 0,
+        avgOrder: todayStats[0][2] || 0
+      },
+      week: {
+        orders: weekStats[0][0] || 0,
+        revenue: weekStats[0][1] || 0,
+        avgOrder: weekStats[0][2] || 0
+      },
+      month: {
+        orders: monthStats[0][0] || 0,
+        revenue: monthStats[0][1] || 0,
+        avgOrder: monthStats[0][2] || 0
+      },
+      allTime: {
+        orders: totalOrders[0][0] || 0,
+        revenue: totalRevenue[0][0] || 0,
+        avgOrder: avgOrderValue[0][0] || 0
+      },
+      growth: {
+        percentage: parseFloat(growthPercentage),
+        direction: parseFloat(growthPercentage) >= 0 ? 'up' : 'down'
+      },
+      topItems: topItems.map((item: any) => ({
+        item_names: item[0],
+        order_count: item[1]
+      })),
+      busyHours: busyHours.map((hour: any) => ({
+        hour: hour[0],
+        order_count: hour[1]
+      }))
+    };
+  } catch (error) {
+    console.error("Get stats error:", error);
     ctx.response.status = 500;
     ctx.response.body = { message: "Internal server error" };
   }
