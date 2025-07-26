@@ -592,6 +592,38 @@ router.post("/api/business/profile", authMiddleware, async (ctx) => {
 
 // ===== MENU MANAGEMENT ENDPOINTS =====
 
+// Get menu categories (must come before /:id route)
+router.get("/api/menu/categories", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    
+    const categories = await db.query(
+      `SELECT DISTINCT category, subcategory 
+       FROM menu_items 
+       WHERE user_id = $1 AND category IS NOT NULL 
+       ORDER BY category, subcategory`,
+      [userId]
+    );
+    
+    // Group by category and subcategory
+    const groupedCategories = categories.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      if (item.subcategory && !acc[item.category].includes(item.subcategory)) {
+        acc[item.category].push(item.subcategory);
+      }
+      return acc;
+    }, {});
+    
+    ctx.response.body = groupedCategories;
+  } catch (error) {
+    console.error("Get menu categories error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
 // Get specific menu item
 router.get("/api/menu/:id", authMiddleware, async (ctx) => {
   try {
@@ -809,15 +841,13 @@ router.put("/api/menu/reorder", authMiddleware, async (ctx) => {
       return;
     }
     
-    // Update sort orders in a transaction
-    await db.transaction(async (client) => {
-      for (const item of items) {
-        await client.query(
-          "UPDATE menu_items SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3",
-          [item.sort_order, item.id, userId]
-        );
-      }
-    });
+    // Update sort orders one by one
+    for (const item of items) {
+      await db.query(
+        "UPDATE menu_items SET sort_order = COALESCE($1, 0), updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3",
+        [item.sort_order, item.id, userId]
+      );
+    }
     
     // Invalidate cache
     await redis.invalidateCache(`menu:${userId}`);
@@ -830,37 +860,7 @@ router.put("/api/menu/reorder", authMiddleware, async (ctx) => {
   }
 });
 
-// Get menu categories
-router.get("/api/menu/categories", authMiddleware, async (ctx) => {
-  try {
-    const userId = ctx.state.user.userId;
-    
-    const categories = await db.query(
-      `SELECT DISTINCT category, subcategory 
-       FROM menu_items 
-       WHERE user_id = $1 AND category IS NOT NULL 
-       ORDER BY category, subcategory`,
-      [userId]
-    );
-    
-    // Group by category and subcategory
-    const groupedCategories = categories.reduce((acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      if (item.subcategory && !acc[item.category].includes(item.subcategory)) {
-        acc[item.category].push(item.subcategory);
-      }
-      return acc;
-    }, {});
-    
-    ctx.response.body = groupedCategories;
-  } catch (error) {
-    console.error("Get menu categories error:", error);
-    ctx.response.status = 500;
-    ctx.response.body = { message: "Internal server error" };
-  }
-});
+
 
 // Bulk update menu items
 router.put("/api/menu/bulk", authMiddleware, async (ctx) => {
@@ -875,21 +875,19 @@ router.put("/api/menu/bulk", authMiddleware, async (ctx) => {
       return;
     }
     
-    // Update items in a transaction
-    await db.transaction(async (client) => {
-      for (const item of items) {
-        await client.query(
+    // Update items one by one
+    for (const item of items) {
+              await db.query(
           `UPDATE menu_items SET 
             name = $1, description = $2, category = $3, subcategory = $4, 
             price = $5, cost_price = $6, available = $7, preparation_time = $8,
-            sort_order = $9, updated_at = CURRENT_TIMESTAMP 
+            sort_order = COALESCE($9, 0), updated_at = CURRENT_TIMESTAMP 
            WHERE id = $10 AND user_id = $11`,
           [item.name, item.description, item.category, item.subcategory, 
            item.price, item.cost_price, item.available, item.preparation_time, 
            item.sort_order, item.id, userId]
         );
-      }
-    });
+    }
     
     // Invalidate cache
     await redis.invalidateCache(`menu:${userId}`);
@@ -1227,38 +1225,39 @@ router.get("/api/stats", authMiddleware, async (ctx) => {
       ? ((currentWeekRevenue - lastWeekRevenueValue) / lastWeekRevenueValue * 100).toFixed(1)
       : "0";
     
-    // Top selling items (last 30 days)
-    const topItemsRaw = await db.query(
+    // Top selling items (last 30 days) - Get all orders and process in JavaScript
+    const allOrders = await db.query(
       `SELECT 
-        items,
-        COUNT(*) as order_count
+        items
        FROM orders 
        WHERE user_id = $1 
-       AND DATE(created_at) >= $2 
-       AND status != 'cancelled'
-       GROUP BY items
-       ORDER BY order_count DESC
-       LIMIT 5`,
-      [userId, thirtyDaysAgo]
+       AND status IN ('completed', 'preparing', 'ready')`,
+      [userId]
     );
     
-    // Parse the JSON items to extract item names
-    const topItems = topItemsRaw.map((row: any) => {
+    // Process items in JavaScript to get individual item counts
+    const itemCounts: { [key: string]: number } = {};
+    
+    allOrders.forEach((order: any) => {
       try {
-        const items = JSON.parse(row.items);
-        const itemNames = items.map((item: any) => item.name).join(', ');
-        return {
-          item_names: itemNames,
-          order_count: parseInt(row.order_count)
-        };
+        const items = Array.isArray(order.items) ? order.items : JSON.parse(order.items);
+        items.forEach((item: any) => {
+          const itemName = item.name;
+          itemCounts[itemName] = (itemCounts[itemName] || 0) + 1;
+        });
       } catch (error) {
-        console.error('Error parsing items JSON:', error);
-        return {
-          item_names: 'Unknown Item',
-          order_count: parseInt(row.order_count)
-        };
+        console.error('Error processing order items:', error);
       }
     });
+    
+    // Convert to array and sort by count
+    const topItems = Object.entries(itemCounts)
+      .map(([itemName, count]) => ({
+        item_names: itemName,
+        order_count: count
+      }))
+      .sort((a, b) => b.order_count - a.order_count)
+      .slice(0, 5);
     
     // Busiest hours (last 30 days)
     const busyHours = await db.query(

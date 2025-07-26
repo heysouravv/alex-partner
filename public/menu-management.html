@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Management - Alex Partners</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            background: #fff;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: #fff;
+            border-bottom: 1px solid #000;
+            position: relative;
+        }
+        
+        .cafe-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            color: #000;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 16px;
+            color: #8e8e93;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .control-btn {
+            padding: 15px 20px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            background: #fff;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            text-align: left;
+        }
+        
+        .control-btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .control-btn.active {
+            background: #000;
+            color: #fff;
+        }
+        
+        .btn {
+            padding: 15px 20px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            background: #fff;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+        }
+        
+        .btn-danger {
+            background: #fff;
+            color: #ff3b30;
+            border-color: #ff3b30;
+        }
+        
+        .btn-danger:hover {
+            background: #fff2f2;
+        }
+        
+        .btn-success {
+            background: #fff;
+            color: #30d158;
+            border-color: #30d158;
+        }
+        
+        .btn-success:hover {
+            background: #f0fff0;
+        }
+        
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 1fr;
+            gap: 0;
+            height: calc(100vh - 100px);
+        }
+        
+        .controls-panel {
+            grid-column: 1;
+            grid-row: 1;
+            background: #fff;
+            border-right: 1px solid #000;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .main-content {
+            grid-column: 2;
+            grid-row: 1;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        .card {
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: #000;
+            color: #fff;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .menu-items {
+            background: #fff;
+            border: 1px solid #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 24px 24px 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        
+        .menu-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto auto;
+            gap: 15px;
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-item:hover {
+            background: #f8f8f8;
+        }
+        
+        .menu-item-header {
+            background: #f0f0f0;
+            font-weight: 600;
+            color: #000;
+            flex-shrink: 0;
+        }
+        
+        .menu-items-content {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            color: #000;
+        }
+        
+        .item-category {
+            color: #8e8e93;
+            font-size: 12px;
+        }
+        
+        .item-price {
+            font-weight: 600;
+            color: #30d158;
+        }
+        
+        .item-status {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-available {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-unavailable {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .category-item {
+            padding: 10px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .category-item:last-child {
+            border-bottom: none;
+        }
+        
+        .category-name {
+            font-weight: 600;
+            color: #000;
+        }
+        
+        .subcategories {
+            color: #8e8e93;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8e8e93;
+        }
+        
+        .error {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 0 24px 20px 24px;
+        }
+        
+        .success {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 0 24px 20px 24px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid #000;
+        }
+        
+        .modal-header {
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .close {
+            color: #fff;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            opacity: 0.7;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #000;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #000;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .dropdown-container {
+            position: relative;
+        }
+        
+        .dropdown-container select,
+        .dropdown-container input {
+            width: 100%;
+        }
+        
+        .dropdown-container input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            background: #fff;
+            border: 2px solid #007aff;
+        }
+        
+        .dropdown-container select:focus {
+            border-color: #007aff;
+        }
+        
+        .logout-btn {
+            position: fixed;
+            top: 48px;
+            left: 24px;
+            background: #f0f0f0;
+            border: 1px solid #000;
+            border-radius: 20px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+            }
+            
+            .controls-panel {
+                border-right: none;
+                border-bottom: 1px solid #000;
+            }
+            
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .menu-item {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 12px 16px;
+            }
+            
+            .menu-item-header {
+                display: none;
+            }
+            
+            .item-category {
+                display: block;
+                margin-top: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="cafe-name">🍽️ Menu Management</div>
+            <div class="status">
+                <span>Manage your menu items and categories</span>
+            </div>
+        </div>
+        
+        <div class="logout-btn" onclick="logout()">
+            🚪 Logout
+        </div>
+        
+        <div id="message"></div>
+
+        <div class="dashboard-grid">
+            <!-- Controls Panel (Left) -->
+            <div class="controls-panel">
+                <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 700;">Quick Actions</h3>
+                <div class="controls">
+                    <button class="control-btn" onclick="openAddModal()">➕ Add Menu Item</button>
+                    <a href="index.html" class="control-btn">← Back to Dashboard</a>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <div class="menu-grid">
+                    <div class="card">
+                        <div class="card-header">📊 Quick Stats</div>
+                        <div class="card-body">
+                            <div id="stats">
+                                <div class="loading">Loading stats...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">🏷️ Categories</div>
+                        <div class="card-body">
+                            <div id="categories">
+                                <div class="loading">Loading categories...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-items">
+                    <div class="card-header">📋 Menu Items</div>
+                    <div class="menu-items-content">
+                        <div id="menuItems">
+                            <div class="loading">Loading menu items...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Menu Item Modal -->
+    <div id="menuModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 id="modalTitle">Add Menu Item</h2>
+            </div>
+            <div class="modal-body">
+                <form id="menuForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Name *</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category *</label>
+                            <div class="dropdown-container">
+                                <select id="category" class="form-control" required>
+                                    <option value="">Select or type to create new...</option>
+                                </select>
+                                <input type="text" id="categoryInput" class="form-control" placeholder="Type to create new category..." style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subcategory">Subcategory</label>
+                            <div class="dropdown-container">
+                                <select id="subcategory" class="form-control">
+                                    <option value="">Select or type to create new...</option>
+                                </select>
+                                <input type="text" id="subcategoryInput" class="form-control" placeholder="Type to create new subcategory..." style="display: none;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="preparation_time">Preparation Time (minutes)</label>
+                            <input type="number" id="preparation_time" class="form-control" value="15" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="price">Price *</label>
+                            <input type="number" id="price" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cost_price">Cost Price</label>
+                            <input type="number" id="cost_price" class="form-control" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea id="description" class="form-control" rows="3" placeholder="High-quality description for AI agents..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="available" checked>
+                            Available for ordering
+                        </label>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn">Save Menu Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMenuItems = [];
+        let editingItemId = null;
+
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return token;
+        }
+
+        // Show message
+        function showMessage(message, type = 'success') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // Load menu items
+        async function loadMenuItems() {
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/menu', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load menu items');
+
+                currentMenuItems = await response.json();
+                displayMenuItems();
+                loadStats();
+            } catch (error) {
+                console.error('Error loading menu items:', error);
+                showMessage('Failed to load menu items', 'error');
+            }
+        }
+
+        // Display menu items
+        function displayMenuItems() {
+            const container = document.getElementById('menuItems');
+            
+            if (currentMenuItems.length === 0) {
+                container.innerHTML = '<div class="loading">No menu items found. Add your first item!</div>';
+                return;
+            }
+
+            let html = `
+                <div class="menu-item menu-item-header">
+                    <div>Item</div>
+                    <div>Category</div>
+                    <div>Price</div>
+                    <div>Status</div>
+                    <div>Actions</div>
+                </div>
+            `;
+
+            currentMenuItems.forEach(item => {
+                const statusClass = item.available ? 'status-available' : 'status-unavailable';
+                const statusText = item.available ? 'Available' : 'Unavailable';
+                
+                html += `
+                    <div class="menu-item" data-id="${item.id}">
+                        <div>
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-category">${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}</div>
+                        </div>
+                        <div>${item.category}</div>
+                        <div class="item-price">$${parseFloat(item.price).toFixed(2)}</div>
+                        <div class="item-status ${statusClass}">${statusText}</div>
+                        <div>
+                            <button class="btn btn-sm" onclick="editItem(${item.id})">✏️</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">🗑️</button>
+                            <button class="btn btn-sm ${item.available ? 'btn-secondary' : 'btn-success'}" onclick="toggleItem(${item.id})">
+                                ${item.available ? '🔴' : '🟢'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Load stats
+        function loadStats() {
+            const stats = {
+                total: currentMenuItems.length,
+                available: currentMenuItems.filter(item => item.available).length,
+                categories: new Set(currentMenuItems.map(item => item.category)).size,
+                avgPrice: currentMenuItems.length > 0 ? 
+                    (currentMenuItems.reduce((sum, item) => sum + parseFloat(item.price), 0) / currentMenuItems.length).toFixed(2) : 0
+            };
+
+            document.getElementById('stats').innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: #667eea;">${stats.total}</div>
+                        <div style="color: #718096;">Total Items</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: #38a169;">${stats.available}</div>
+                        <div style="color: #718096;">Available</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: #ed8936;">${stats.categories}</div>
+                        <div style="color: #718096;">Categories</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold; color: #e53e3e;">$${stats.avgPrice}</div>
+                        <div style="color: #718096;">Avg Price</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load categories
+        async function loadCategories() {
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/menu/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load categories');
+
+                const categories = await response.json();
+                displayCategories(categories);
+                populateDropdowns(categories);
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                showMessage('Failed to load categories', 'error');
+            }
+        }
+        
+        // Populate dropdowns with existing categories
+        function populateDropdowns(categories) {
+            const categorySelect = document.getElementById('category');
+            const subcategorySelect = document.getElementById('subcategory');
+            
+            // Clear existing options except the first one
+            categorySelect.innerHTML = '<option value="">Select or type to create new...</option>';
+            subcategorySelect.innerHTML = '<option value="">Select or type to create new...</option>';
+            
+            // Add existing categories
+            Object.keys(categories).forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+        }
+        
+        // Handle category selection and subcategory population
+        function handleCategoryChange() {
+            const categorySelect = document.getElementById('category');
+            const subcategorySelect = document.getElementById('subcategory');
+            const selectedCategory = categorySelect.value;
+            
+            // Clear subcategory options
+            subcategorySelect.innerHTML = '<option value="">Select or type to create new...</option>';
+            
+            if (selectedCategory) {
+                // Get subcategories for selected category
+                const categories = getCategoriesFromMenuItems();
+                const subcategories = categories[selectedCategory] || [];
+                
+                subcategories.forEach(subcategory => {
+                    const option = document.createElement('option');
+                    option.value = subcategory;
+                    option.textContent = subcategory;
+                    subcategorySelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Get categories from current menu items
+        function getCategoriesFromMenuItems() {
+            const categories = {};
+            currentMenuItems.forEach(item => {
+                if (!categories[item.category]) {
+                    categories[item.category] = [];
+                }
+                if (item.subcategory && !categories[item.category].includes(item.subcategory)) {
+                    categories[item.category].push(item.subcategory);
+                }
+            });
+            return categories;
+        }
+        
+        // Handle dropdown input switching
+        function setupDropdownInputs() {
+            const categorySelect = document.getElementById('category');
+            const categoryInput = document.getElementById('categoryInput');
+            const subcategorySelect = document.getElementById('subcategory');
+            const subcategoryInput = document.getElementById('subcategoryInput');
+            
+            // Category dropdown handling
+            categorySelect.addEventListener('focus', function() {
+                categoryInput.style.display = 'block';
+                categoryInput.focus();
+            });
+            
+            categoryInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (categoryInput.value.trim()) {
+                        categorySelect.value = categoryInput.value.trim();
+                    }
+                    categoryInput.style.display = 'none';
+                }, 200);
+            });
+            
+            categoryInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    categoryInput.blur();
+                }
+            });
+            
+            // Subcategory dropdown handling
+            subcategorySelect.addEventListener('focus', function() {
+                subcategoryInput.style.display = 'block';
+                subcategoryInput.focus();
+            });
+            
+            subcategoryInput.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (subcategoryInput.value.trim()) {
+                        subcategorySelect.value = subcategoryInput.value.trim();
+                    }
+                    subcategoryInput.style.display = 'none';
+                }, 200);
+            });
+            
+            subcategoryInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    subcategoryInput.blur();
+                }
+            });
+        }
+
+        // Display categories
+        function displayCategories(categories) {
+            const container = document.getElementById('categories');
+            
+            if (Object.keys(categories).length === 0) {
+                container.innerHTML = '<div class="loading">No categories found</div>';
+                return;
+            }
+
+            let html = '';
+            Object.entries(categories).forEach(([category, subcategories]) => {
+                html += `
+                    <div class="category-item">
+                        <div>
+                            <div class="category-name">${category}</div>
+                            <div class="subcategories">${subcategories.join(', ')}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Open add modal
+        function openAddModal() {
+            editingItemId = null;
+            document.getElementById('modalTitle').textContent = 'Add Menu Item';
+            document.getElementById('menuForm').reset();
+            document.getElementById('available').checked = true;
+            document.getElementById('menuModal').style.display = 'block';
+        }
+
+        // Edit item
+        function editItem(id) {
+            const item = currentMenuItems.find(item => item.id === id);
+            if (!item) return;
+
+            editingItemId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Menu Item';
+            
+            document.getElementById('name').value = item.name;
+            document.getElementById('description').value = item.description || '';
+            document.getElementById('price').value = item.price;
+            document.getElementById('cost_price').value = item.cost_price || '';
+            document.getElementById('preparation_time').value = item.preparation_time || 15;
+            document.getElementById('available').checked = item.available;
+
+            // Populate dropdowns and set values
+            const categories = getCategoriesFromMenuItems();
+            populateDropdowns(categories);
+            
+            // Set category value
+            const categorySelect = document.getElementById('category');
+            categorySelect.value = item.category;
+            
+            // Handle subcategory population
+            handleCategoryChange();
+            
+            // Set subcategory value
+            const subcategorySelect = document.getElementById('subcategory');
+            subcategorySelect.value = item.subcategory || '';
+
+            document.getElementById('menuModal').style.display = 'block';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('menuModal').style.display = 'none';
+            editingItemId = null;
+        }
+
+        // Save menu item
+        async function saveMenuItem(formData) {
+            const token = checkAuth();
+            if (!token) return;
+
+            const url = editingItemId ? `/api/menu/${editingItemId}` : '/api/menu';
+            const method = editingItemId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save menu item');
+
+                showMessage(`Menu item ${editingItemId ? 'updated' : 'created'} successfully`);
+                closeModal();
+                loadMenuItems();
+            } catch (error) {
+                console.error('Error saving menu item:', error);
+                showMessage('Failed to save menu item', 'error');
+            }
+        }
+
+        // Delete item
+        async function deleteItem(id) {
+            if (!confirm('Are you sure you want to delete this menu item?')) return;
+
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/menu/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete menu item');
+
+                showMessage('Menu item deleted successfully');
+                loadMenuItems();
+            } catch (error) {
+                console.error('Error deleting menu item:', error);
+                showMessage('Failed to delete menu item', 'error');
+            }
+        }
+
+        // Toggle item availability
+        async function toggleItem(id) {
+            const token = checkAuth();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/menu/${id}/toggle`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to toggle menu item');
+
+                showMessage('Menu item availability updated');
+                loadMenuItems();
+            } catch (error) {
+                console.error('Error toggling menu item:', error);
+                showMessage('Failed to toggle menu item', 'error');
+            }
+        }
+
+        // Form submission
+        document.getElementById('menuForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                category: document.getElementById('category').value,
+                subcategory: document.getElementById('subcategory').value,
+                price: parseFloat(document.getElementById('price').value),
+                cost_price: parseFloat(document.getElementById('cost_price').value) || null,
+                preparation_time: parseInt(document.getElementById('preparation_time').value) || 15,
+                available: document.getElementById('available').checked
+            };
+
+            saveMenuItem(formData);
+        });
+        
+        // Add event listeners for dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            const categorySelect = document.getElementById('category');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', handleCategoryChange);
+            }
+            setupDropdownInputs();
+        });
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('menuModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('onboarding_completed');
+            window.location.href = 'login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMenuItems();
+            loadCategories();
+        });
+    </script>
+</body>
+</html> 

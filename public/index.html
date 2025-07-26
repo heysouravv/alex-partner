@@ -1001,6 +1001,7 @@
                     <button class="control-btn active" onclick="showSection('orders')" id="ordersBtn">📋 Orders</button>
                     <button class="control-btn" onclick="showSection('menu')" id="menuBtn">🍽️ Menu</button>
                     <button class="control-btn" onclick="showSection('stats')" id="statsBtn">📊 Stats</button>
+                    <a href="menu-management.html" class="control-btn" style="text-decoration: none;">⚙️ Menu Management</a>
                     <button class="toggle-btn online" onclick="toggleOnlineStatus()" id="toggleBtn">🟢 Online</button>
                 </div>
             </div>
@@ -1068,18 +1069,7 @@
         
         let orders = [];
 
-        let menuItems = [
-            { id: 1, name: 'Espresso', price: 2.50, available: true },
-            { id: 2, name: 'Americano', price: 3.00, available: true },
-            { id: 3, name: 'Cappuccino', price: 4.00, available: true },
-            { id: 4, name: 'Latte', price: 4.20, available: false },
-            { id: 5, name: 'Oat Latte', price: 4.50, available: true },
-            { id: 6, name: 'Cold Brew', price: 3.50, available: true },
-            { id: 7, name: 'Croissant', price: 3.20, available: true },
-            { id: 8, name: 'Bagel', price: 2.80, available: true },
-            { id: 9, name: 'Avocado Toast', price: 6.50, available: false },
-            { id: 10, name: 'Blueberry Muffin', price: 2.80, available: true }
-        ];
+        let menuItems = [];
 
         // Authentication functions
         function checkAuth() {
@@ -1213,9 +1203,9 @@
                 detailedStats.style.display = 'none';
                 if (section === 'orders') {
                     renderOrders();
-                } else if (section === 'menu') {
-                    renderMenu();
-                }
+                            } else if (section === 'menu') {
+                loadMenuItems();
+            }
             }
         }
         
@@ -1333,45 +1323,76 @@
         function renderMenu() {
             const menuContainer = document.getElementById('menu');
             
+            if (menuItems.length === 0) {
+                menuContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🍽️</div>
+                        <div class="empty-text">No menu items found</div>
+                        <div class="empty-subtext">Add your first menu item in Menu Management</div>
+                    </div>
+                `;
+                return;
+            }
+            
             menuContainer.innerHTML = `
                 ${menuItems.map(item => `
                     <div class="menu-item">
                         <div class="menu-item-info">
                             <div class="menu-item-name">${item.name}</div>
-                            <div class="menu-item-price">${item.price.toFixed(2)}</div>
+                            <div class="menu-item-price">$${parseFloat(item.price).toFixed(2)}</div>
                         </div>
                         <div class="menu-item-toggle ${item.available ? 'available' : ''}" onclick="toggleMenuItem(${item.id})"></div>
                     </div>
                 `).join('')}
-                <button class="add-item-btn" onclick="addMenuItem()">+ Add New Item</button>
+                <button class="add-item-btn" onclick="window.location.href='menu-management.html'">+ Manage Menu Items</button>
             `;
         }
 
-        function toggleMenuItem(id) {
-            const item = menuItems.find(item => item.id === id);
-            if (item) {
-                item.available = !item.available;
+        async function loadMenuItems() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('/api/menu', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load menu items');
+
+                menuItems = await response.json();
                 renderMenu();
-                console.log(`${item.name} is now ${item.available ? 'available' : 'unavailable'}`);
+            } catch (error) {
+                console.error('Error loading menu items:', error);
             }
         }
 
-        function addMenuItem() {
-            const name = prompt('Item name:');
-            const price = parseFloat(prompt('Price:'));
-            
-            if (name && !isNaN(price)) {
-                const newItem = {
-                    id: Math.max(...menuItems.map(item => item.id)) + 1,
-                    name: name,
-                    price: price,
-                    available: true
-                };
-                menuItems.push(newItem);
-                renderMenu();
-                console.log('Added new menu item:', newItem);
+        async function toggleMenuItem(id) {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/menu/${id}/toggle`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    // Reload menu items to get updated data
+                    await loadMenuItems();
+                    console.log('Menu item availability updated');
+                } else {
+                    console.error('Failed to toggle menu item');
+                }
+            } catch (error) {
+                console.error('Error toggling menu item:', error);
             }
         }
+
+
 
         async function loadOrders() {
             const token = localStorage.getItem('token');
@@ -1394,7 +1415,7 @@
                             time: getTimeAgo(order.created_at),
                             status: order.status,
                             items: order.items,
-                            total: order.total
+                            total: parseFloat(order.total)
                         }));
                     
                     renderOrders();
@@ -1427,7 +1448,7 @@
                             time: getTimeAgo(order.created_at),
                             status: order.status,
                             items: order.items,
-                            total: order.total
+                            total: parseFloat(order.total)
                         }));
                     
                     // Check if we have new orders
@@ -1516,7 +1537,7 @@
                 return;
             }
 
-            const pendingCount = orders.filter(o => o.status !== 'completed').length;
+            const pendingCount = orders.length;
             orderCount.textContent = pendingCount;
             if (ordersCountElement) ordersCountElement.textContent = `${pendingCount} pending`;
 
@@ -1537,7 +1558,7 @@
                         ${order.items.map(item => `
                             <div class="item">
                                 <span class="item-name">${item.name}</span>
-                                <span class="item-price">$${item.price.toFixed(2)}</span>
+                                <span class="item-price">$${parseFloat(item.price).toFixed(2)}</span>
                             </div>
                         `).join('')}
                     </div>
