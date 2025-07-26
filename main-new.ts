@@ -549,7 +549,20 @@ router.post("/api/business/profile", authMiddleware, async (ctx) => {
   try {
     const userId = ctx.state.user.userId;
     const body = await ctx.request.body().value;
-    const { business_name, business_type, description, timezone, logo_url } = body;
+    const { 
+      business_name, 
+      business_type, 
+      description, 
+      timezone, 
+      logo_url,
+      latitude,
+      longitude,
+      address,
+      city,
+      state,
+      postal_code,
+      country
+    } = body;
     
     // Validate input
     if (!business_name || !business_type) {
@@ -558,20 +571,43 @@ router.post("/api/business/profile", authMiddleware, async (ctx) => {
       return;
     }
     
+    // Validate location data if provided
+    if (latitude !== undefined && longitude !== undefined) {
+      if (latitude < -90 || latitude > 90) {
+        ctx.response.status = 400;
+        ctx.response.body = { message: "Invalid latitude value" };
+        return;
+      }
+      if (longitude < -180 || longitude > 180) {
+        ctx.response.status = 400;
+        ctx.response.body = { message: "Invalid longitude value" };
+        return;
+      }
+    }
+    
     // Check if business profile already exists
     const existingProfile = await db.query("SELECT id FROM business_profiles WHERE user_id = $1", [userId]);
     
     if (existingProfile.length > 0) {
       // Update existing profile
       await db.query(
-        "UPDATE business_profiles SET business_name = $1, business_type = $2, description = $3, timezone = $4, logo_url = $5, updated_at = CURRENT_TIMESTAMP WHERE user_id = $6",
-        [business_name, business_type, description, timezone, logo_url, userId]
+        `UPDATE business_profiles SET 
+          business_name = $1, business_type = $2, description = $3, timezone = $4, logo_url = $5,
+          latitude = $6, longitude = $7, address = $8, city = $9, state = $10, postal_code = $11, country = $12,
+          updated_at = CURRENT_TIMESTAMP 
+         WHERE user_id = $13`,
+        [business_name, business_type, description, timezone, logo_url, 
+         latitude, longitude, address, city, state, postal_code, country, userId]
       );
     } else {
       // Create new profile
       await db.query(
-        "INSERT INTO business_profiles (user_id, business_name, business_type, description, timezone, logo_url) VALUES ($1, $2, $3, $4, $5, $6)",
-        [userId, business_name, business_type, description, timezone, logo_url]
+        `INSERT INTO business_profiles (
+          user_id, business_name, business_type, description, timezone, logo_url,
+          latitude, longitude, address, city, state, postal_code, country
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [userId, business_name, business_type, description, timezone, logo_url,
+         latitude, longitude, address, city, state, postal_code, country]
       );
     }
     
@@ -1316,6 +1352,331 @@ router.get("/api/stats", authMiddleware, async (ctx) => {
     ctx.response.body = { message: "Internal server error" };
   }
 });
+
+// Enhanced location-based business discovery for AI agents
+router.get("/api/v1/businesses/nearby", async (ctx) => {
+  try {
+    const lat = parseFloat(ctx.request.url.searchParams.get("lat") || "0");
+    const lng = parseFloat(ctx.request.url.searchParams.get("lng") || "0");
+    const radius = parseFloat(ctx.request.url.searchParams.get("radius") || "5000"); // Default 5km
+    const limit = parseInt(ctx.request.url.searchParams.get("limit") || "20");
+    const businessType = ctx.request.url.searchParams.get("business_type");
+    
+    // Validate coordinates
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Invalid coordinates" };
+      return;
+    }
+    
+    // Calculate bounding box for efficient querying (approximate)
+    const latDelta = radius / 111000; // Rough conversion: 1 degree ≈ 111km
+    const lngDelta = radius / (111000 * Math.cos(lat * Math.PI / 180));
+    
+    let query = `
+      SELECT 
+        bp.id as business_id,
+        bp.business_name,
+        bp.business_type,
+        bp.description,
+        bp.is_online,
+        bp.latitude,
+        bp.longitude,
+        bp.address,
+        bp.city,
+        bp.state,
+        bp.postal_code,
+        bp.created_at,
+        u.name as owner_name,
+        COUNT(mi.id) as menu_item_count
+      FROM business_profiles bp
+      JOIN users u ON bp.user_id = u.id
+      LEFT JOIN menu_items mi ON bp.user_id = mi.user_id AND mi.available = true
+      WHERE bp.is_active = true 
+        AND bp.is_online = true
+        AND bp.latitude IS NOT NULL 
+        AND bp.longitude IS NOT NULL
+        AND bp.latitude BETWEEN $1 AND $2
+        AND bp.longitude BETWEEN $3 AND $4
+    `;
+    
+    const params = [lat - latDelta, lat + latDelta, lng - lngDelta, lng + lngDelta];
+    let paramIndex = 5;
+    
+    if (businessType) {
+      query += ` AND bp.business_type = $${paramIndex}`;
+      params.push(businessType);
+      paramIndex++;
+    }
+    
+    query += `
+      GROUP BY bp.id, u.name
+      ORDER BY 
+        SQRT(POWER(bp.latitude - $${paramIndex}, 2) + POWER(bp.longitude - $${paramIndex + 1}, 2))
+      LIMIT $${paramIndex + 2}
+    `;
+    
+    params.push(lat, lng, limit);
+    
+    const businesses = await db.query(query, params);
+    
+    // Convert BigInt to Number for JSON serialization
+    const serializedBusinesses = businesses.map(business => ({
+      ...business,
+      menu_item_count: Number(business.menu_item_count)
+    }));
+    
+    // Calculate actual distances and filter by radius
+    const nearbyBusinesses = serializedBusinesses
+      .map(business => {
+        const distance = calculateDistance(lat, lng, business.latitude, business.longitude);
+        return {
+          ...business,
+          distance: Math.round(distance),
+          distance_unit: 'm'
+        };
+      })
+      .filter(business => business.distance <= radius)
+      .slice(0, limit);
+    
+    ctx.response.body = {
+      businesses: nearbyBusinesses,
+      search_location: { lat, lng },
+      radius: radius,
+      total: nearbyBusinesses.length
+    };
+  } catch (error) {
+    console.error("Nearby businesses error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Search businesses by address/area
+router.get("/api/v1/businesses/search", async (ctx) => {
+  try {
+    const query = ctx.request.url.searchParams.get("q") || "";
+    const businessType = ctx.request.url.searchParams.get("business_type");
+    const limit = parseInt(ctx.request.url.searchParams.get("limit") || "20");
+    
+    if (!query.trim()) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Search query is required" };
+      return;
+    }
+    
+    let sqlQuery = `
+      SELECT 
+        bp.id as business_id,
+        bp.business_name,
+        bp.business_type,
+        bp.description,
+        bp.is_online,
+        bp.latitude,
+        bp.longitude,
+        bp.address,
+        bp.city,
+        bp.state,
+        bp.postal_code,
+        bp.created_at,
+        u.name as owner_name,
+        COUNT(mi.id) as menu_item_count
+      FROM business_profiles bp
+      JOIN users u ON bp.user_id = u.id
+      LEFT JOIN menu_items mi ON bp.user_id = mi.user_id AND mi.available = true
+      WHERE bp.is_active = true 
+        AND bp.is_online = true
+        AND (
+          bp.business_name ILIKE $1 
+          OR bp.city ILIKE $1 
+          OR bp.state ILIKE $1 
+          OR bp.address ILIKE $1
+        )
+    `;
+    
+    const params = [`%${query}%`];
+    let paramIndex = 2;
+    
+    if (businessType) {
+      sqlQuery += ` AND bp.business_type = $${paramIndex}`;
+      params.push(businessType);
+      paramIndex++;
+    }
+    
+    sqlQuery += `
+      GROUP BY bp.id, u.name
+      ORDER BY bp.business_name
+      LIMIT $${paramIndex}
+    `;
+    
+    params.push(limit);
+    
+    const businesses = await db.query(sqlQuery, params);
+    
+    // Convert BigInt to Number for JSON serialization
+    const serializedBusinesses = businesses.map(business => ({
+      ...business,
+      menu_item_count: Number(business.menu_item_count)
+    }));
+    
+    ctx.response.body = {
+      businesses: serializedBusinesses,
+      search_query: query,
+      total: serializedBusinesses.length
+    };
+  } catch (error) {
+    console.error("Business search error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Enhanced feed endpoint with location filtering
+router.get("/api/v1/feed", async (ctx) => {
+  try {
+    const limit = parseInt(ctx.request.url.searchParams.get("limit") || "20");
+    const offset = parseInt(ctx.request.url.searchParams.get("offset") || "0");
+    const businessType = ctx.request.url.searchParams.get("business_type");
+    const lat = ctx.request.url.searchParams.get("lat");
+    const lng = ctx.request.url.searchParams.get("lng");
+    const radius = parseFloat(ctx.request.url.searchParams.get("radius") || "5000");
+    
+    let query = `
+      SELECT 
+        bp.id as business_id,
+        bp.business_name,
+        bp.business_type,
+        bp.description,
+        bp.is_online,
+        bp.latitude,
+        bp.longitude,
+        bp.address,
+        bp.city,
+        bp.state,
+        bp.created_at,
+        u.name as owner_name,
+        COUNT(mi.id) as menu_item_count
+      FROM business_profiles bp
+      JOIN users u ON bp.user_id = u.id
+      LEFT JOIN menu_items mi ON bp.user_id = mi.user_id AND mi.available = true
+      WHERE bp.is_active = true AND bp.is_online = true
+    `;
+    
+    const params: any[] = [];
+    let paramIndex = 1;
+    
+    if (businessType) {
+      query += ` AND bp.business_type = $${paramIndex}`;
+      params.push(businessType);
+      paramIndex++;
+    }
+    
+    // Add location filtering if coordinates provided
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      
+      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+        const latDelta = radius / 111000;
+        const lngDelta = radius / (111000 * Math.cos(latitude * Math.PI / 180));
+        
+        query += ` AND bp.latitude IS NOT NULL AND bp.longitude IS NOT NULL
+                   AND bp.latitude BETWEEN $${paramIndex} AND $${paramIndex + 1}
+                   AND bp.longitude BETWEEN $${paramIndex + 2} AND $${paramIndex + 3}`;
+        params.push(latitude - latDelta, latitude + latDelta, longitude - lngDelta, longitude + lngDelta);
+        paramIndex += 4;
+      }
+    }
+    
+    query += `
+      GROUP BY bp.id, u.name
+      ORDER BY bp.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    
+    params.push(limit, offset);
+    
+    const businesses = await db.query(query, params);
+    
+    // Convert BigInt to Number for JSON serialization
+    const serializedBusinesses = businesses.map(business => ({
+      ...business,
+      menu_item_count: Number(business.menu_item_count)
+    }));
+    
+    // Calculate distances if location provided
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      
+      serializedBusinesses.forEach(business => {
+        if (business.latitude && business.longitude) {
+          business.distance = Math.round(calculateDistance(latitude, longitude, business.latitude, business.longitude));
+          business.distance_unit = 'm';
+        }
+      });
+    }
+    
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(DISTINCT bp.id) as total
+      FROM business_profiles bp
+      WHERE bp.is_active = true AND bp.is_online = true
+    `;
+    
+    const countParams: any[] = [];
+    let countParamIndex = 1;
+    
+    if (businessType) {
+      countQuery += ` AND bp.business_type = $${countParamIndex}`;
+      countParams.push(businessType);
+      countParamIndex++;
+    }
+    
+    if (lat && lng) {
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(lng);
+      
+      if (latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+        const latDelta = radius / 111000;
+        const lngDelta = radius / (111000 * Math.cos(latitude * Math.PI / 180));
+        
+        countQuery += ` AND bp.latitude IS NOT NULL AND bp.longitude IS NOT NULL
+                       AND bp.latitude BETWEEN $${countParamIndex} AND $${countParamIndex + 1}
+                       AND bp.longitude BETWEEN $${countParamIndex + 2} AND $${countParamIndex + 3}`;
+        countParams.push(latitude - latDelta, latitude + latDelta, longitude - lngDelta, longitude + lngDelta);
+      }
+    }
+    
+    const totalResult = await db.query(countQuery, countParams);
+    const total = parseInt(totalResult[0]?.total || "0");
+    
+    ctx.response.body = {
+      businesses: serializedBusinesses,
+      pagination: {
+        limit,
+        offset,
+        total
+      }
+    };
+  } catch (error) {
+    console.error("Feed error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Utility function to calculate distance between two points
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000; // Earth's radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 // Health check endpoint
 router.get("/api/health", async (ctx) => {

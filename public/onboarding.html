@@ -401,7 +401,7 @@
         <div class="step" id="step2">
             <div class="form">
                 <h1 class="step-title">🏪 Tell us about your business</h1>
-                <p class="step-subtitle">Help us customize your experience by telling us about your business type.</p>
+                <p class="step-subtitle">Help us customize your experience by telling us about your business type and location.</p>
                 
                 <div class="form-group">
                     <label class="form-label">What type of business do you run?</label>
@@ -413,6 +413,57 @@
                 <div class="form-group">
                     <label class="form-label">Business Description (Optional)</label>
                     <textarea class="form-input" id="businessDescription" placeholder="Tell customers about your business..." rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">📍 Business Location</label>
+                    <p style="font-size: 14px; color: #8e8e93; margin-bottom: 12px;">
+                        This helps customers find your business and enables delivery services.
+                    </p>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-input" id="businessAddress" placeholder="Enter your business address">
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-input" id="businessCity" placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State</label>
+                            <input type="text" class="form-input" id="businessState" placeholder="State">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label class="form-label">Postal Code</label>
+                            <input type="text" class="form-input" id="businessPostalCode" placeholder="Postal Code">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Country</label>
+                            <input type="text" class="form-input" id="businessCountry" placeholder="Country" value="India">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label class="form-label">Latitude (Optional)</label>
+                            <input type="number" step="any" class="form-input" id="businessLatitude" placeholder="e.g., 19.0760">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Longitude (Optional)</label>
+                            <input type="number" step="any" class="form-input" id="businessLongitude" placeholder="e.g., 72.8777">
+                        </div>
+                    </div>
+                    
+                    <div style="background: #f8f8f8; padding: 12px; border-radius: 8px; margin-top: 12px;">
+                        <p style="font-size: 12px; color: #666; margin: 0;">
+                            💡 <strong>Tip:</strong> You can find your coordinates on Google Maps by right-clicking on your location and selecting "What's here?"
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="navigation">
@@ -529,6 +580,14 @@
         // Step navigation
         async function nextStep() {
             if (currentStep < 5) {
+                // Special handling for step 2 - save business profile
+                if (currentStep === 2) {
+                    const saved = await saveBusinessProfile();
+                    if (!saved) {
+                        return; // Don't proceed if save failed
+                    }
+                }
+                
                 // Save current step progress
                 await saveStepProgress(currentStep);
                 
@@ -598,7 +657,12 @@
                     card.addEventListener('click', function() {
                         container.querySelectorAll('.business-type-card').forEach(c => c.classList.remove('selected'));
                         this.classList.add('selected');
-                        onboardingData.business = { type: this.dataset.type };
+                        
+                        // Initialize business data if not exists
+                        if (!onboardingData.business) {
+                            onboardingData.business = {};
+                        }
+                        onboardingData.business.type = this.dataset.type;
                     });
                 });
             } catch (error) {
@@ -735,6 +799,68 @@
                 } catch (error) {
                     console.error('Error saving step progress:', error);
                 }
+            }
+        }
+        
+        async function saveBusinessProfile() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            // Collect form data
+            const businessType = document.querySelector('.business-type-card.selected')?.dataset.type;
+            const description = document.getElementById('businessDescription').value;
+            const address = document.getElementById('businessAddress').value;
+            const city = document.getElementById('businessCity').value;
+            const state = document.getElementById('businessState').value;
+            const postalCode = document.getElementById('businessPostalCode').value;
+            const country = document.getElementById('businessCountry').value;
+            const latitude = document.getElementById('businessLatitude').value;
+            const longitude = document.getElementById('businessLongitude').value;
+            
+            // Validate required fields
+            if (!businessType) {
+                showError(2, 'Please select a business type');
+                return false;
+            }
+            
+            if (!address || !city || !state) {
+                showError(2, 'Please fill in the required location fields (Address, City, State)');
+                return false;
+            }
+            
+            try {
+                const response = await fetch('/api/business/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        business_name: onboardingData.user?.business_name || 'My Business',
+                        business_type: businessType,
+                        description: description,
+                        address: address,
+                        city: city,
+                        state: state,
+                        postal_code: postalCode,
+                        country: country,
+                        latitude: latitude ? parseFloat(latitude) : null,
+                        longitude: longitude ? parseFloat(longitude) : null
+                    })
+                });
+                
+                if (response.ok) {
+                    showSuccess(2, 'Business profile saved successfully!');
+                    return true;
+                } else {
+                    const error = await response.json();
+                    showError(2, error.message || 'Failed to save business profile');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Error saving business profile:', error);
+                showError(2, 'Failed to save business profile');
+                return false;
             }
         }
         

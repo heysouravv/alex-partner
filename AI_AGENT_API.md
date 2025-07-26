@@ -23,12 +23,15 @@ Authorization: Agent my-ai-agent-123
 
 **GET** `/api/v1/feed`
 
-Discover available businesses that are online and accepting orders.
+Discover available businesses that are online and accepting orders. Now supports location-based filtering.
 
 **Query Parameters:**
 - `limit` (optional): Number of businesses to return (default: 20)
 - `offset` (optional): Pagination offset (default: 0)
 - `business_type` (optional): Filter by business type (e.g., "cafe", "restaurant")
+- `lat` (optional): Latitude for location-based filtering
+- `lng` (optional): Longitude for location-based filtering
+- `radius` (optional): Search radius in meters (default: 5000)
 
 **Response:**
 ```json
@@ -40,6 +43,14 @@ Discover available businesses that are online and accepting orders.
       "business_type": "cafe",
       "description": "A cozy coffee shop",
       "is_online": true,
+      "latitude": 19.0760,
+      "longitude": 72.8777,
+      "address": "123 Main Street",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "postal_code": "400001",
+      "distance": 1200,
+      "distance_unit": "m",
       "created_at": "2025-07-25 21:04:37",
       "owner_name": "AI Test Cafe",
       "menu_item_count": 3,
@@ -56,11 +67,110 @@ Discover available businesses that are online and accepting orders.
 
 **Example:**
 ```bash
+# Get all businesses
 curl -H "Authorization: Agent test-agent-123" \
-  "http://localhost:8080/api/v1/feed?business_type=cafe&limit=10"
+  "http://localhost:8080/api/v1/feed"
+
+# Get nearby cafes
+curl -H "Authorization: Agent test-agent-123" \
+  "http://localhost:8080/api/v1/feed?business_type=cafe&lat=19.0760&lng=72.8777&radius=2000"
 ```
 
-### 2. Get Business Menu
+### 2. Nearby Businesses
+
+**GET** `/api/v1/businesses/nearby`
+
+Find businesses within a specific radius of given coordinates.
+
+**Query Parameters:**
+- `lat` (required): Latitude
+- `lng` (required): Longitude
+- `radius` (optional): Search radius in meters (default: 5000)
+- `limit` (optional): Number of businesses to return (default: 20)
+- `business_type` (optional): Filter by business type
+
+**Response:**
+```json
+{
+  "businesses": [
+    {
+      "business_id": 3,
+      "business_name": "AI Test Cafe",
+      "business_type": "cafe",
+      "description": "A cozy coffee shop",
+      "is_online": true,
+      "latitude": 19.0760,
+      "longitude": 72.8777,
+      "address": "123 Main Street",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "postal_code": "400001",
+      "distance": 1200,
+      "distance_unit": "m",
+      "created_at": "2025-07-25 21:04:37",
+      "owner_name": "AI Test Cafe",
+      "menu_item_count": 3
+    }
+  ],
+  "search_location": {
+    "lat": 19.0760,
+    "lng": 72.8777
+  },
+  "radius": 5000,
+  "total": 1
+}
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Agent test-agent-123" \
+  "http://localhost:8080/api/v1/businesses/nearby?lat=19.0760&lng=72.8777&radius=2000&business_type=restaurant"
+```
+
+### 3. Search Businesses
+
+**GET** `/api/v1/businesses/search`
+
+Search businesses by name, city, state, or address.
+
+**Query Parameters:**
+- `q` (required): Search query
+- `business_type` (optional): Filter by business type
+- `limit` (optional): Number of businesses to return (default: 20)
+
+**Response:**
+```json
+{
+  "businesses": [
+    {
+      "business_id": 3,
+      "business_name": "AI Test Cafe",
+      "business_type": "cafe",
+      "description": "A cozy coffee shop",
+      "is_online": true,
+      "latitude": 19.0760,
+      "longitude": 72.8777,
+      "address": "123 Main Street",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "postal_code": "400001",
+      "created_at": "2025-07-25 21:04:37",
+      "owner_name": "AI Test Cafe",
+      "menu_item_count": 3
+    }
+  ],
+  "search_query": "Mumbai cafe",
+  "total": 1
+}
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Agent test-agent-123" \
+  "http://localhost:8080/api/v1/businesses/search?q=Mumbai&business_type=cafe"
+```
+
+### 4. Get Business Menu
 
 **GET** `/api/v1/business/{businessId}/menu`
 
@@ -75,6 +185,11 @@ Get the complete menu for a specific business.
     "business_type": "cafe",
     "description": "A cozy coffee shop",
     "is_online": true,
+    "latitude": 19.0760,
+    "longitude": 72.8777,
+    "address": "123 Main Street",
+    "city": "Mumbai",
+    "state": "Maharashtra",
     "owner_name": "AI Test Cafe"
   },
   "menu": [
@@ -99,7 +214,7 @@ curl -H "Authorization: Agent test-agent-123" \
   "http://localhost:8080/api/v1/business/3/menu"
 ```
 
-### 3. Place Order
+### 5. Place Order
 
 **POST** `/api/v1/business/{businessId}/order`
 
@@ -162,7 +277,7 @@ curl -X POST \
   "http://localhost:8080/api/v1/business/3/order"
 ```
 
-### 4. Get Order Status
+### 6. Get Order Status
 
 **GET** `/api/v1/order/{orderId}/status`
 
@@ -208,7 +323,7 @@ curl -H "Authorization: Agent test-agent-123" \
   "http://localhost:8080/api/v1/order/ORD-1753477507473-9jd3ad6n9/status"
 ```
 
-### 5. Cancel Order
+### 7. Cancel Order
 
 **POST** `/api/v1/order/{orderId}/cancel`
 
@@ -245,7 +360,7 @@ curl -X POST \
   "http://localhost:8080/api/v1/order/ORD-1753477507473-9jd3ad6n9/cancel"
 ```
 
-### 6. Submit Feedback
+### 8. Submit Feedback
 
 **POST** `/api/v1/order/{orderId}/feedback`
 
@@ -290,7 +405,7 @@ curl -X POST \
   "http://localhost:8080/api/v1/order/ORD-1753477507473-9jd3ad6n9/feedback"
 ```
 
-### 7. Get Business Status
+### 9. Get Business Status
 
 **GET** `/api/v1/business/{businessId}/status`
 
@@ -318,11 +433,15 @@ curl -H "Authorization: Agent test-agent-123" \
 
 ## 🔄 Typical AI Agent Workflow
 
-### 1. Discover Businesses
+### 1. Discover Businesses by Location
 ```bash
-# Get available businesses
+# Get nearby businesses
 curl -H "Authorization: Agent my-agent" \
-  "http://localhost:8080/api/v1/feed?business_type=cafe"
+  "http://localhost:8080/api/v1/businesses/nearby?lat=19.0760&lng=72.8777&radius=2000&business_type=cafe"
+
+# Search by area
+curl -H "Authorization: Agent my-agent" \
+  "http://localhost:8080/api/v1/businesses/search?q=Mumbai&business_type=restaurant"
 ```
 
 ### 2. Browse Menu
@@ -408,6 +527,7 @@ curl -X POST \
 ## 📊 Rate Limiting
 
 - **Feed API**: 100 requests per minute per agent
+- **Nearby/Search API**: 60 requests per minute per agent
 - **Order API**: 10 orders per minute per agent
 - **Status API**: 60 requests per minute per agent
 
@@ -418,14 +538,17 @@ curl -X POST \
 3. **Cancellation Window**: 60-second limit prevents abuse
 4. **Business Validation**: Orders only accepted from online businesses
 5. **Input Validation**: All inputs are validated and sanitized
+6. **Location Validation**: Coordinates are validated for realistic values
 
 ## 🚀 Best Practices
 
-1. **Polling**: Check order status every 30-60 seconds
-2. **Error Handling**: Implement retry logic for transient errors
-3. **Rate Limiting**: Respect API rate limits
-4. **Logging**: Log all API interactions for debugging
-5. **Validation**: Validate responses before processing
+1. **Location-Based Discovery**: Use coordinates for precise business discovery
+2. **Distance Calculation**: Consider distance when recommending businesses
+3. **Polling**: Check order status every 30-60 seconds
+4. **Error Handling**: Implement retry logic for transient errors
+5. **Rate Limiting**: Respect API rate limits
+6. **Logging**: Log all API interactions for debugging
+7. **Validation**: Validate responses before processing
 
 ## 📝 Testing
 

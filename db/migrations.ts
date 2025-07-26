@@ -29,10 +29,34 @@ export async function runMigrations(): Promise<void> {
       logo_url TEXT,
       is_active BOOLEAN DEFAULT TRUE,
       is_online BOOLEAN DEFAULT TRUE,
+      latitude DECIMAL(10,8),
+      longitude DECIMAL(11,8),
+      address TEXT,
+      city VARCHAR(100),
+      state VARCHAR(50),
+      postal_code VARCHAR(20),
+      country VARCHAR(50) DEFAULT 'India',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Add location columns to existing business_profiles table if they don't exist
+  try {
+    await db.execute(`
+      ALTER TABLE business_profiles 
+      ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,8),
+      ADD COLUMN IF NOT EXISTS longitude DECIMAL(11,8),
+      ADD COLUMN IF NOT EXISTS address TEXT,
+      ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS state VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS country VARCHAR(50) DEFAULT 'India'
+    `);
+    console.log("Location columns added to business_profiles table");
+  } catch (error) {
+    console.log("Location columns already exist or error adding them:", error);
+  }
 
   // Business hours table
   await db.execute(`
@@ -175,6 +199,8 @@ async function createIndexes(): Promise<void> {
   await db.execute("CREATE INDEX IF NOT EXISTS idx_business_profiles_user_id ON business_profiles(user_id)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_business_profiles_type ON business_profiles(business_type)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_business_profiles_online ON business_profiles(is_online, is_active)");
+  await db.execute("CREATE INDEX IF NOT EXISTS idx_business_profiles_location ON business_profiles(latitude, longitude)");
+  await db.execute("CREATE INDEX IF NOT EXISTS idx_business_profiles_city ON business_profiles(city, state)");
 
   // Menu items indexes
   await db.execute("CREATE INDEX IF NOT EXISTS idx_menu_items_user_id ON menu_items(user_id)");
