@@ -1,14 +1,17 @@
 {
+  "tasks": {
+    "start": "deno run --allow-net --allow-read --allow-write --allow-env main-new.ts",
+    "migrate": "deno run --allow-net --allow-read --allow-write --allow-env scripts/migrate.ts",
+    "sample-data": "deno run --allow-net --allow-read --allow-write --allow-env scripts/add-sample-data.ts",
+    "stress-test": "deno run --allow-net --allow-read --allow-write --allow-env scripts/stress-test.ts",
+    "realistic-test": "deno run --allow-net --allow-read --allow-write --allow-env scripts/realistic-stress-test.ts"
+  },
   "imports": {
     "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",
-    "cors": "https://deno.land/x/cors@v1.2.2/mod.ts",
-    "sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts",
+    "cors": "https://deno.land/x/cors@v1.2.2/oakCors.ts",
     "bcrypt": "https://deno.land/x/bcrypt@v0.4.1/mod.ts",
-    "jose": "https://deno.land/x/jose@v4.14.4/mod.ts"
-  },
-  "tasks": {
-    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --watch main.ts",
-    "start": "deno run --allow-net --allow-read --allow-write --allow-env main.ts",
-    "db:init": "deno run --allow-read --allow-write --allow-env db/init-simple.ts"
+    "postgres": "https://deno.land/x/postgres@v0.17.0/mod.ts",
+    "redis": "https://deno.land/x/redis@v0.29.3/mod.ts",
+    "sqlite": "https://deno.land/x/sqlite@v3.9.1/mod.ts"
   }
 } 
