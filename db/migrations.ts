@@ -72,6 +72,7 @@ export async function runMigrations(): Promise<void> {
       available BOOLEAN DEFAULT TRUE,
       is_featured BOOLEAN DEFAULT FALSE,
       preparation_time INTEGER CHECK (preparation_time >= 0),
+      sort_order INTEGER DEFAULT 0,
       image_url TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -179,6 +180,7 @@ async function createIndexes(): Promise<void> {
   await db.execute("CREATE INDEX IF NOT EXISTS idx_menu_items_user_id ON menu_items(user_id)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category)");
   await db.execute("CREATE INDEX IF NOT EXISTS idx_menu_items_available ON menu_items(available)");
+  await db.execute("CREATE INDEX IF NOT EXISTS idx_menu_items_sort_order ON menu_items(sort_order)");
 
   // Orders indexes
   await db.execute("CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)");

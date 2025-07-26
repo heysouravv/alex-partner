@@ -590,6 +590,318 @@ router.post("/api/business/profile", authMiddleware, async (ctx) => {
   }
 });
 
+// ===== MENU MANAGEMENT ENDPOINTS =====
+
+// Get specific menu item
+router.get("/api/menu/:id", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const itemId = ctx.params.id;
+    
+    const menuItem = await db.query(
+      "SELECT * FROM menu_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    if (menuItem.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Menu item not found" };
+      return;
+    }
+    
+    ctx.response.body = menuItem[0];
+  } catch (error) {
+    console.error("Get menu item error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Create new menu item
+router.post("/api/menu", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const body = await ctx.request.body().value;
+    const { 
+      name, 
+      description, 
+      category, 
+      subcategory, 
+      price, 
+      cost_price, 
+      available = true, 
+      preparation_time = 15,
+      sort_order: initialSortOrder = 0
+    } = body;
+    
+    // Validate required fields
+    if (!name || !category || !price) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Name, category, and price are required" };
+      return;
+    }
+    
+    // Get next sort order if not provided
+    let finalSortOrder = initialSortOrder;
+    if (initialSortOrder === 0) {
+      const maxSortOrder = await db.query(
+        "SELECT COALESCE(MAX(sort_order), 0) + 1 as next_order FROM menu_items WHERE user_id = $1 AND category = $2",
+        [userId, category]
+      );
+      finalSortOrder = maxSortOrder[0].next_order;
+    }
+    
+    const result = await db.query(
+      `INSERT INTO menu_items (
+        user_id, name, description, category, subcategory, price, cost_price, 
+        available, preparation_time, sort_order
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [userId, name, description, category, subcategory, price, cost_price, available, preparation_time, finalSortOrder]
+    );
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.status = 201;
+    ctx.response.body = { 
+      message: "Menu item created successfully", 
+      id: result[0].id 
+    };
+  } catch (error) {
+    console.error("Create menu item error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Update menu item
+router.put("/api/menu/:id", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const itemId = ctx.params.id;
+    const body = await ctx.request.body().value;
+    const { 
+      name, 
+      description, 
+      category, 
+      subcategory, 
+      price, 
+      cost_price, 
+      available, 
+      preparation_time,
+      sort_order
+    } = body;
+    
+    // Check if menu item exists and belongs to user
+    const existingItem = await db.query(
+      "SELECT id FROM menu_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    if (existingItem.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Menu item not found" };
+      return;
+    }
+    
+    await db.query(
+      `UPDATE menu_items SET 
+        name = $1, description = $2, category = $3, subcategory = $4, 
+        price = $5, cost_price = $6, available = $7, preparation_time = $8,
+        sort_order = $9, updated_at = CURRENT_TIMESTAMP 
+       WHERE id = $10 AND user_id = $11`,
+      [name, description, category, subcategory, price, cost_price, available, preparation_time, sort_order, itemId, userId]
+    );
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.body = { message: "Menu item updated successfully" };
+  } catch (error) {
+    console.error("Update menu item error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Delete menu item
+router.delete("/api/menu/:id", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const itemId = ctx.params.id;
+    
+    // Check if menu item exists and belongs to user
+    const existingItem = await db.query(
+      "SELECT id FROM menu_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    if (existingItem.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Menu item not found" };
+      return;
+    }
+    
+    await db.query(
+      "DELETE FROM menu_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.body = { message: "Menu item deleted successfully" };
+  } catch (error) {
+    console.error("Delete menu item error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Toggle menu item availability
+router.patch("/api/menu/:id/toggle", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const itemId = ctx.params.id;
+    
+    // Toggle availability
+    await db.query(
+      "UPDATE menu_items SET available = NOT available, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    // Get updated status
+    const updatedItem = await db.query(
+      "SELECT id, name, available FROM menu_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    
+    if (updatedItem.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = { message: "Menu item not found" };
+      return;
+    }
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.body = { 
+      message: `Menu item ${updatedItem[0].available ? 'enabled' : 'disabled'} successfully`,
+      available: updatedItem[0].available
+    };
+  } catch (error) {
+    console.error("Toggle menu item error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Reorder menu items
+router.put("/api/menu/reorder", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const body = await ctx.request.body().value;
+    const { items } = body; // Array of {id, sort_order}
+    
+    if (!items || !Array.isArray(items)) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Items array is required" };
+      return;
+    }
+    
+    // Update sort orders in a transaction
+    await db.transaction(async (client) => {
+      for (const item of items) {
+        await client.query(
+          "UPDATE menu_items SET sort_order = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3",
+          [item.sort_order, item.id, userId]
+        );
+      }
+    });
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.body = { message: "Menu items reordered successfully" };
+  } catch (error) {
+    console.error("Reorder menu items error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Get menu categories
+router.get("/api/menu/categories", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    
+    const categories = await db.query(
+      `SELECT DISTINCT category, subcategory 
+       FROM menu_items 
+       WHERE user_id = $1 AND category IS NOT NULL 
+       ORDER BY category, subcategory`,
+      [userId]
+    );
+    
+    // Group by category and subcategory
+    const groupedCategories = categories.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      if (item.subcategory && !acc[item.category].includes(item.subcategory)) {
+        acc[item.category].push(item.subcategory);
+      }
+      return acc;
+    }, {});
+    
+    ctx.response.body = groupedCategories;
+  } catch (error) {
+    console.error("Get menu categories error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
+// Bulk update menu items
+router.put("/api/menu/bulk", authMiddleware, async (ctx) => {
+  try {
+    const userId = ctx.state.user.userId;
+    const body = await ctx.request.body().value;
+    const { items } = body; // Array of menu items to update
+    
+    if (!items || !Array.isArray(items)) {
+      ctx.response.status = 400;
+      ctx.response.body = { message: "Items array is required" };
+      return;
+    }
+    
+    // Update items in a transaction
+    await db.transaction(async (client) => {
+      for (const item of items) {
+        await client.query(
+          `UPDATE menu_items SET 
+            name = $1, description = $2, category = $3, subcategory = $4, 
+            price = $5, cost_price = $6, available = $7, preparation_time = $8,
+            sort_order = $9, updated_at = CURRENT_TIMESTAMP 
+           WHERE id = $10 AND user_id = $11`,
+          [item.name, item.description, item.category, item.subcategory, 
+           item.price, item.cost_price, item.available, item.preparation_time, 
+           item.sort_order, item.id, userId]
+        );
+      }
+    });
+    
+    // Invalidate cache
+    await redis.invalidateCache(`menu:${userId}`);
+    
+    ctx.response.body = { message: "Menu items updated successfully" };
+  } catch (error) {
+    console.error("Bulk update menu items error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { message: "Internal server error" };
+  }
+});
+
 // Business types route (public, with caching)
 router.get("/api/business/types", async (ctx) => {
   try {

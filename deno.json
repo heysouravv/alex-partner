@@ -4,7 +4,8 @@
     "migrate": "deno run --allow-net --allow-read --allow-write --allow-env scripts/migrate.ts",
     "sample-data": "deno run --allow-net --allow-read --allow-write --allow-env scripts/add-sample-data.ts",
     "stress-test": "deno run --allow-net --allow-read --allow-write --allow-env scripts/stress-test.ts",
-    "realistic-test": "deno run --allow-net --allow-read --allow-write --allow-env scripts/realistic-stress-test.ts"
+    "realistic-test": "deno run --allow-net --allow-read --allow-write --allow-env scripts/realistic-stress-test.ts",
+    "add-sort-order": "deno run --allow-net --allow-read --allow-write --allow-env scripts/add-sort-order.ts"
   },
   "imports": {
     "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",
